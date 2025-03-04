@@ -19,6 +19,7 @@ struct option long_options[] =
 };
 
 void	args_options(int argc, char **argv);
+int		validate_number(const char *str, int max_value);
 
 
 void	args_parser(int argc, char **argv)
@@ -28,6 +29,8 @@ void	args_parser(int argc, char **argv)
         print_help();
         exit(EXIT_FAILURE);
     }
+
+	defvals_data_opts();
 
 	args_options(argc, argv);
 }
@@ -65,7 +68,17 @@ void	args_options(int argc, char **argv)
 			}
 			else if (strcmp("speedup", option_name) == 0)
 			{
-				printf("Speedup set to: %s\n", optarg);
+				int speedup = validate_number(optarg, 250);
+
+				if (speedup == -1)
+				{
+					fprintf(stderr, "ft_nmap: invalid value %s.\n", optarg);
+					exit_failure("");
+				}
+
+				g_data.opts.thrnum = speedup;
+				printf("Speedup set to: %i\n", g_data.opts.thrnum);
+
 				exit(EXIT_SUCCESS);
 			}
 			else if (strcmp("scan", option_name) == 0)
@@ -81,4 +94,15 @@ void	args_options(int argc, char **argv)
             }
 		}
 	}
+}
+
+int	validate_number(const char *str, int max_value)
+{
+    char *endptr;
+    long value = strtol(str, &endptr, 10);
+
+    if (*endptr != '\0' || value < 0 || value > max_value)
+        return -1;
+
+    return (int)value;
 }

@@ -6,6 +6,14 @@
 
 extern t_nmap	g_data;
 
+void	defvals_data_opts(void)
+{
+	memset(g_data.opts.ports, 0, sizeof(g_data.opts.ports));
+	g_data.opts.host_destlsthdr = NULL;
+	g_data.opts.thrnum = 0;
+	g_data.opts.scan_types = 0;
+}
+
 void	free_list(t_destlst **head)
 {
     if (!head || !(*head))
@@ -65,7 +73,7 @@ void	exit_failure(char *str)
 	if (!str)
 		fprintf(stderr, "Fatal error\n");
 	else
-		fprintf(stderr, "%s\n", str);
+		fprintf(stderr, "%s", str);
 
 	exit(EXIT_FAILURE);
 }

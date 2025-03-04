@@ -5,6 +5,8 @@
 
 t_nmap g_data;
 
+
+
 int	main(int argc, char **argv)
 {
 	args_parser(argc, argv);
