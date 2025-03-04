@@ -2,8 +2,63 @@
 # include <stdio.h>
 # include <unistd.h>
 # include <stdlib.h>
+# include <string.h>
 
 extern t_nmap	g_data;
+
+void	free_list(t_destlst **head)
+{
+    if (!head || !(*head))
+        return;
+
+    t_destlst *current = *head;
+    t_destlst *next;
+
+    while (current)
+    {
+        next = current->next;
+        free(current->hostname);
+        free(current);
+        current = next;
+    }
+    *head = NULL;
+}
+
+void	add_node_to_end(t_destlst **head, t_destlst *new_node)
+{
+    if (!head || !new_node)
+        return;
+
+    if (*head == NULL)
+    {
+        *head = new_node;
+        return;
+    }
+
+    t_destlst *current = *head;
+    while (current->next)
+        current = current->next;
+
+    current->next = new_node;
+}
+
+t_destlst	*create_node(const char *hostname, struct sockaddr_in ip)
+{
+    t_destlst *new_node = malloc(sizeof(t_destlst));
+	if (!new_node)
+        return (NULL);
+
+    new_node->hostname = strdup(hostname);
+    if (!new_node->hostname)
+    {
+        free(new_node);
+        return (NULL);
+    }
+
+    new_node->dest_ip = ip;
+    new_node->next = NULL;
+    return (new_node);
+}
 
 void	exit_failure(char *str)
 {
