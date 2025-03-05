@@ -12,5 +12,7 @@ int	main(int argc, char **argv)
 	args_parser(argc, argv);
 
 	nmap_performance();
+
+	memfree();
 	return 0;
 }

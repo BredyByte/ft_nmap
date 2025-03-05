@@ -25,7 +25,8 @@ void	free_list(t_destlst **head)
     while (current)
     {
         next = current->next;
-        free(current->hostname);
+        if (current->hostname)
+            free(current->hostname);
         free(current);
         current = next;
     }
@@ -53,19 +54,31 @@ void	add_node_to_end(t_destlst **head, t_destlst *new_node)
 t_destlst	*create_node(const char *hostname, struct sockaddr_in ip)
 {
     t_destlst *new_node = malloc(sizeof(t_destlst));
-	if (!new_node)
-        return (NULL);
+    if (!new_node)
+        return NULL;
 
-    new_node->hostname = strdup(hostname);
-    if (!new_node->hostname)
+    if (hostname)
     {
-        free(new_node);
-        return (NULL);
+        new_node->hostname = strdup(hostname);
+        if (!new_node->hostname)
+        {
+            free(new_node);
+            return NULL;
+        }
+    }
+    else
+    {
+        new_node->hostname = NULL;
     }
 
     new_node->dest_ip = ip;
     new_node->next = NULL;
-    return (new_node);
+    return new_node;
+}
+
+void    memfree(void)
+{
+    free_list(&(g_data.opts.host_destlsthdr));
 }
 
 void	exit_failure(char *str)
@@ -74,6 +87,8 @@ void	exit_failure(char *str)
 		fprintf(stderr, "Fatal error\n");
 	else
 		fprintf(stderr, "%s", str);
+
+    memfree();
 
 	exit(EXIT_FAILURE);
 }

@@ -4,6 +4,10 @@
 # include <stdio.h>
 # include <string.h>
 # include <stdlib.h>
+# include <arpa/inet.h>		// inet_pton
+# include <sys/types.h>		// getaddrinfo
+# include <sys/socket.h>	// getaddrinfo
+# include <netdb.h>			// getaddrinfo
 
 extern t_nmap	g_data;
 
@@ -18,9 +22,11 @@ struct option long_options[] =
     {0, 0, 0, 0}
 };
 
-void	args_options(int argc, char **argv);
-int		validate_number(const char *str, int max_value);
-
+void				args_options(int argc, char **argv);
+int					validate_number(const char *str, int max_value);
+struct sockaddr_in	resolve_hostname(const char *hostname);
+int					get_valid_ip(const char *input, struct sockaddr_in *out_ip);
+void				add_ip_to_list(const char *input);
 
 void	args_parser(int argc, char **argv)
 {
@@ -58,8 +64,7 @@ void	args_options(int argc, char **argv)
 			}
 			else if (strcmp("ip", option_name) == 0)
 			{
-				printf("Target IP: %s\n", optarg);
-				exit(EXIT_SUCCESS);
+				add_ip_to_list(optarg);
 			}
 			else if (strcmp("file", option_name) == 0)
 			{
@@ -77,9 +82,6 @@ void	args_options(int argc, char **argv)
 				}
 
 				g_data.opts.thrnum = speedup;
-				printf("Speedup set to: %i\n", g_data.opts.thrnum);
-
-				exit(EXIT_SUCCESS);
 			}
 			else if (strcmp("scan", option_name) == 0)
 			{
@@ -90,7 +92,7 @@ void	args_options(int argc, char **argv)
 			{
                 fprintf(stderr, "Unknown option: %s\n", option_name);
                 print_help();
-                exit(EXIT_FAILURE);
+				exit_failure("");
             }
 		}
 	}
@@ -105,4 +107,66 @@ int	validate_number(const char *str, int max_value)
         return -1;
 
     return (int)value;
+}
+
+struct sockaddr_in resolve_hostname(const char *hostname)
+{
+    struct addrinfo hints, *result;
+    struct sockaddr_in addr;
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+
+    if (getaddrinfo(hostname, NULL, &hints, &result) != 0)
+    {
+        addr.sin_addr.s_addr = INADDR_NONE;
+        return addr;
+    }
+
+    memcpy(&addr, result->ai_addr, sizeof(struct sockaddr_in));
+    freeaddrinfo(result);
+
+    return addr;
+}
+
+int	get_valid_ip(const char *input, struct sockaddr_in *out_ip)
+{
+	if (!out_ip)
+	{
+		fprintf(stderr, "Error: invalid sockaddr_in pointer\n");
+		return -1;
+	}
+
+    int res = inet_pton(AF_INET, input, &(out_ip->sin_addr));
+
+    if (res == 1)
+        return 1;
+
+    *out_ip = resolve_hostname(input);
+    if (out_ip->sin_addr.s_addr != INADDR_NONE)
+        return 0;
+
+    return -1;
+}
+
+void	add_ip_to_list(const char *input)
+{
+	struct sockaddr_in ip;
+	int is_ip;
+
+	if (input == NULL || strlen(input) == 0)
+		exit_failure("ft_nmap: Invalid input add_ip_to_list\n");
+
+	// vals: -1 unknown host, 0 - hostname, 1 - IPv4,
+	is_ip = get_valid_ip(input, &ip);
+
+    if (is_ip == -1)
+        exit_failure("ft_nmap: unknown host\n");
+
+    t_destlst *new_node = create_node(is_ip ? NULL : input, ip);
+    if (!new_node)
+		exit_failure("ft_nmap: Failed to create node\n");
+
+	add_node_to_end(&(g_data.opts.host_destlsthdr), new_node);
 }
