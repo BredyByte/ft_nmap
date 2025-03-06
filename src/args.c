@@ -51,6 +51,9 @@ void	args_options(int argc, char **argv)
 
 	while ((opt = getopt_long(argc, argv, "", long_options, &option_index)) != -1)
     {
+        if (opt == '?') // unknown argument
+            exit_failure("");
+
 		if (opt == 0)
 		{
 			const char *option_name = long_options[option_index].name;
@@ -91,14 +94,15 @@ void	args_options(int argc, char **argv)
                 g_data.opts.scan_types = 0;
 				apply_scans(optarg);
 			}
-			else
-			{
-                fprintf(stderr, "Unknown option: %s\n", option_name);
-                print_help();
-				exit_failure("");
-            }
 		}
 	}
+
+    if (optind < argc)  // additional check for remaining arguments
+    {
+        fprintf(stderr, "ft_nmap: unknown argument: %s\n", argv[optind]);
+        print_help();
+        exit_failure("");
+    }
 
     print_options();
 }
