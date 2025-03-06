@@ -3,6 +3,20 @@
 
 # include <arpa/inet.h>
 # include <sys/socket.h>
+# include <stdio.h>
+# include <string.h>
+# include <stdlib.h>
+# include <unistd.h>
+# include <errno.h>
+# include <fcntl.h>
+# include <sys/select.h>
+# include <sys/time.h>
+# include <netinet/ip.h>
+# include <netinet/tcp.h>
+
+# define PROTO_TCP IPPROTO_TCP
+# define PROTO_UDP IPPROTO_UDP
+# define PORTS_LEN 1025
 
 typedef enum	e_scan_type
 {
@@ -23,7 +37,7 @@ typedef struct	s_destlst
 
 typedef struct	s_opts
 {
-	uint8_t		ports[1025];
+	uint8_t		ports[PORTS_LEN];
 	t_destlst	*host_destlsthdr;
 	uint8_t		thrnum;
 	uint8_t     scan_types;
