@@ -160,7 +160,7 @@ int	get_valid_ip(const char *input, struct sockaddr_in *out_ip)
 
 	if (!out_ip)
 	{
-		fprintf(stderr, "Error: invalid sockaddr_in pointer\n");
+		fprintf(stderr, "ft_nmap: invalid sockaddr_in pointer in get_valid_ip\n");
 		return -1;
 	}
 
@@ -193,14 +193,14 @@ int add_ip_to_list(const char *input)
 	is_ip = get_valid_ip(input, &ip);
 
     if (is_ip == -1) {
-        fprintf(stderr, "ft_nmap: unknown host\n");
+        fprintf(stderr, "ft_nmap: unknown host '%s'\n", input);
         return -1;
     }
 
     new_node = create_node(is_ip ? NULL : input, ip);
     if (!new_node)
     {
-		fprintf(stderr, "ft_nmap: Failed to create node\n");
+		fprintf(stderr, "ft_nmap: Failed to create node for '%s' in add_ip_to_list\n", input);
         return -1;
     }
 
@@ -290,8 +290,6 @@ void    print_options(void)
             current = current->next;
         }
     }
-
-    putchar('\n');
 
     // speedup
     if (g_data.opts.thrnum > 0)
