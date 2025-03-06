@@ -30,6 +30,8 @@ void				add_ip_to_list(const char *input);
 int					get_scan_flag(const char *token);
 void				apply_scans(const char *input);
 void                print_options(void);
+int                 parse_port_range(const char *range_str);
+void                parse_ports(const char *input);
 
 void	args_parser(int argc, char **argv)
 {
@@ -61,12 +63,14 @@ void	args_options(int argc, char **argv)
 			if (strcmp("help", option_name) == 0)									// ✅
 			{
 				print_help();
-				exit(EXIT_SUCCESS);
+				memfree();
+                exit(EXIT_SUCCESS);
 			}
-			else if (strcmp("port", option_name) == 0)								// 🟥
+			else if (strcmp("port", option_name) == 0)								// ✅
 			{
-				printf("Port(s) selected: %s\n", optarg);
-				exit(EXIT_SUCCESS);
+                memset(g_data.opts.ports, 0, sizeof(g_data.opts.ports));
+                g_data.opts.port_flag = 1;
+				parse_ports(optarg);
 			}
 			else if (strcmp("ip", option_name) == 0)								// ✅
 			{
@@ -107,10 +111,10 @@ void	args_options(int argc, char **argv)
     print_options();
 }
 
-int	validate_number(const char *str, int max_value)
+int validate_number(const char *str, int max_value)
 {
-    char *endptr;
-    long value = strtol(str, &endptr, 10);
+    char    *endptr;
+    long    value = strtol(str, &endptr, 10);
 
     if (*endptr != '\0' || value <= 0 || value > max_value)
         return -1;
@@ -118,10 +122,10 @@ int	validate_number(const char *str, int max_value)
     return (int)value;
 }
 
-struct sockaddr_in resolve_hostname(const char *hostname)
+struct sockaddr_in  resolve_hostname(const char *hostname)
 {
-    struct addrinfo hints, *result;
-    struct sockaddr_in addr;
+    struct addrinfo     hints, *result;
+    struct sockaddr_in  addr;
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
@@ -141,13 +145,15 @@ struct sockaddr_in resolve_hostname(const char *hostname)
 
 int	get_valid_ip(const char *input, struct sockaddr_in *out_ip)
 {
+    int res;
+
 	if (!out_ip)
 	{
 		fprintf(stderr, "Error: invalid sockaddr_in pointer\n");
 		return -1;
 	}
 
-    int res = inet_pton(AF_INET, input, &(out_ip->sin_addr));
+    res = inet_pton(AF_INET, input, &(out_ip->sin_addr));
 
     if (res == 1)
         return 1;
@@ -161,8 +167,9 @@ int	get_valid_ip(const char *input, struct sockaddr_in *out_ip)
 
 void	add_ip_to_list(const char *input)
 {
-	struct sockaddr_in ip;
-	int is_ip;
+	struct sockaddr_in  ip;
+	int                 is_ip;
+    t_destlst           *new_node;
 
 	if (input == NULL || strlen(input) == 0)
 		exit_failure("ft_nmap: Invalid input add_ip_to_list\n");
@@ -173,14 +180,14 @@ void	add_ip_to_list(const char *input)
     if (is_ip == -1)
         exit_failure("ft_nmap: unknown host\n");
 
-    t_destlst *new_node = create_node(is_ip ? NULL : input, ip);
+    new_node = create_node(is_ip ? NULL : input, ip);
     if (!new_node)
 		exit_failure("ft_nmap: Failed to create node\n");
 
 	add_node_to_end(&(g_data.opts.host_destlsthdr), new_node);
 }
 
-int	get_scan_flag(const char *token)
+int get_scan_flag(const char *token)
 {
     if (strcmp(token, "SYN") == 0) return SCAN_SYN;
     if (strcmp(token, "NULL") == 0) return SCAN_NULL;
@@ -234,7 +241,20 @@ void    print_options(void)
     printf("Selected options:\n\n");
 
     // ports
-    // in progres...
+    printf("Ports:\n  ");
+    if (g_data.opts.port_flag)
+    {
+        for (int i = 0; i < (PORTS_LEN); ++i)
+        {
+            if (g_data.opts.ports[i])
+                printf("%i ", i);
+        }
+        putchar('\n');
+    }
+    else
+        printf("1-1024\n");
+
+    putchar('\n');
 
     // IPs list
     if (g_data.opts.host_destlsthdr != NULL)
@@ -250,7 +270,7 @@ void    print_options(void)
         }
     }
 
-    printf("\n");
+    putchar('\n');
 
     // speedup
     if (g_data.opts.thrnum > 0)
@@ -259,7 +279,7 @@ void    print_options(void)
         printf("  threads: %d\n", g_data.opts.thrnum);
     }
 
-    printf("\n");
+    putchar('\n');
 
     // scan
     printf("Scan types:\n");
@@ -270,5 +290,81 @@ void    print_options(void)
         g_data.opts.scan_types & SCAN_FIN  ? 1 : 0,
         g_data.opts.scan_types & SCAN_XMAS ? 1 : 0,
         g_data.opts.scan_types & SCAN_UDP  ? 1 : 0);
-    printf("\n");
+
+    putchar('\n');
+}
+
+// -1 error else 0
+int parse_port_range(const char *range_str)
+{
+    char    *dash_pos;
+    int     start, end;
+    char    start_str[10], end_str[10];
+
+    // Find the '-' character to check for a range
+    if ((dash_pos = strchr(range_str, '-')) == NULL)
+        return 0;
+
+    // dividing into two parts
+    strncpy(start_str, range_str, dash_pos - range_str);
+    start_str[dash_pos - range_str] = '\0'; // Null-terminate the start string
+    strcpy(end_str, dash_pos + 1);  // Copy everything after the dash
+
+    // Validate the start and end port numbers
+    start = validate_number(start_str, PORTS_LEN - 1);
+    end = validate_number(end_str, PORTS_LEN - 1);
+
+    if (start == -1 || end == -1 || start > end)
+    {
+        fprintf(stderr, "ft_nmap: --port invalid range %s\n", range_str);
+        return -1;
+    }
+
+    // setting the ports to 1 (enabled);
+    for (int i = start; i <= end; i++)
+        g_data.opts.ports[i] = 1;
+
+    return 0;
+}
+
+void    parse_ports(const char *input)
+{
+    char    *copy;
+    char    *token;
+    int     port;
+
+    if (input == NULL || strlen(input) == 0)
+        exit_failure("ft_nmap: Invalid input in parse_ports\n");
+
+    copy = strdup(input);
+    if (!copy)
+        exit_failure("ft_nmap: Memory allocation in parse_ports failed\n");
+
+    token = strtok(copy, ",");
+
+    while (token != NULL)
+    {
+        if (strchr(token, '-') != NULL)
+        {
+            if (parse_port_range(token) == -1)
+            {
+                free(copy);
+                exit_failure("");
+            }
+        }
+        else
+        {
+            port = validate_number(token, PORTS_LEN - 1);
+            if (port == -1)
+            {
+                fprintf(stderr, "ft_nmap: invalid port '%s'\n", token);
+                free(copy);
+                exit_failure("");
+            }
+            g_data.opts.ports[port] = 1;
+        }
+        token = strtok(NULL, ",");
+    }
+
+    free(copy);
 }

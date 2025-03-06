@@ -13,6 +13,7 @@
 # include <sys/time.h>
 # include <netinet/ip.h>
 # include <netinet/tcp.h>
+# include <stdbool.h>
 
 # define PROTO_TCP IPPROTO_TCP
 # define PROTO_UDP IPPROTO_UDP
@@ -37,6 +38,7 @@ typedef struct	s_destlst
 
 typedef struct	s_opts
 {
+	bool		port_flag;
 	uint8_t		ports[PORTS_LEN];
 	t_destlst	*host_destlsthdr;
 	uint8_t		thrnum;
