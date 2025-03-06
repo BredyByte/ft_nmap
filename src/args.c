@@ -9,6 +9,8 @@
 # include <sys/socket.h>	// getaddrinfo
 # include <netdb.h>			// getaddrinfo
 
+# define BUFFER_SIZE 1024
+
 extern t_nmap	g_data;
 
 struct option long_options[] =
@@ -26,12 +28,13 @@ void				args_options(int argc, char **argv);
 int					validate_number(const char *str, int max_value);
 struct sockaddr_in	resolve_hostname(const char *hostname);
 int					get_valid_ip(const char *input, struct sockaddr_in *out_ip);
-void				add_ip_to_list(const char *input);
+int			        add_ip_to_list(const char *input);
 int					get_scan_flag(const char *token);
 void				apply_scans(const char *input);
 void                print_options(void);
 int                 parse_port_range(const char *range_str);
 void                parse_ports(const char *input);
+void                read_ips_from_file(const char *filename);
 
 void	args_parser(int argc, char **argv)
 {
@@ -60,35 +63,36 @@ void	args_options(int argc, char **argv)
 		{
 			const char *option_name = long_options[option_index].name;
 
-			if (strcmp("help", option_name) == 0)									// ✅
+			if (strcmp("help", option_name) == 0)
 			{
 				print_help();
 				memfree();
                 exit(EXIT_SUCCESS);
 			}
-			else if (strcmp("port", option_name) == 0)								// ✅
+			else if (strcmp("port", option_name) == 0)
 			{
                 memset(g_data.opts.ports, 0, sizeof(g_data.opts.ports));
                 g_data.opts.port_flag = true;
 				parse_ports(optarg);
 			}
-			else if (strcmp("ip", option_name) == 0)								// ✅
+			else if (strcmp("ip", option_name) == 0)
 			{
                 if (g_data.opts.file_flag == true)
                     exit_failure("ft_nmap: --ip can't be set with --file flag\n");
 
                 g_data.opts.ip_flag = true;
-				add_ip_to_list(optarg);
+                if (add_ip_to_list(optarg) == -1)
+                    exit_failure("");
 			}
-			else if (strcmp("file", option_name) == 0)								// 🟥
+			else if (strcmp("file", option_name) == 0)
 			{
                 if (g_data.opts.ip_flag == true)
                     exit_failure("ft_nmap: --ip can't be set with --file flag\n");
 
                 g_data.opts.file_flag = true;
-				printf("Reading IPs from file: %s\n", optarg);
+				read_ips_from_file(optarg);
 			}
-			else if (strcmp("speedup", option_name) == 0)							// ✅
+			else if (strcmp("speedup", option_name) == 0)
 			{
 				int speedup = validate_number(optarg, 250);
 
@@ -100,7 +104,7 @@ void	args_options(int argc, char **argv)
 
 				g_data.opts.thrnum = speedup;
 			}
-			else if (strcmp("scan", option_name) == 0)								// ✅
+			else if (strcmp("scan", option_name) == 0)
 			{
                 g_data.opts.scan_types = 0;
 				apply_scans(optarg);
@@ -172,26 +176,36 @@ int	get_valid_ip(const char *input, struct sockaddr_in *out_ip)
     return -1;
 }
 
-void	add_ip_to_list(const char *input)
+// -1 - in case of error, 0 - OK
+int add_ip_to_list(const char *input)
 {
 	struct sockaddr_in  ip;
 	int                 is_ip;
     t_destlst           *new_node;
 
 	if (input == NULL || strlen(input) == 0)
-		exit_failure("ft_nmap: Invalid input add_ip_to_list\n");
+    {
+		fprintf(stderr, "ft_nmap: Invalid input add_ip_to_list\n");
+        return -1;
+    }
 
 	// vals: -1 unknown host, 0 - hostname, 1 - IPv4,
 	is_ip = get_valid_ip(input, &ip);
 
-    if (is_ip == -1)
-        exit_failure("ft_nmap: unknown host\n");
+    if (is_ip == -1) {
+        fprintf(stderr, "ft_nmap: unknown host\n");
+        return -1;
+    }
 
     new_node = create_node(is_ip ? NULL : input, ip);
     if (!new_node)
-		exit_failure("ft_nmap: Failed to create node\n");
+    {
+		fprintf(stderr, "ft_nmap: Failed to create node\n");
+        return -1;
+    }
 
 	add_node_to_end(&(g_data.opts.host_destlsthdr), new_node);
+    return 0;
 }
 
 int get_scan_flag(const char *token)
@@ -374,4 +388,40 @@ void    parse_ports(const char *input)
     }
 
     free(copy);
+}
+
+void    read_ips_from_file(const char *filename)
+{
+    FILE *file = fopen(filename, "r");
+    if (file == NULL)
+    {
+        fprintf(stderr, "ft_nmap: Failed to open file %s\n", filename);
+        exit_failure("");
+    }
+
+    char    line[BUFFER_SIZE];
+    char    *token;
+
+    while (fgets(line, sizeof(line), file))
+    {
+        line[strcspn(line, "\n")] = '\0';
+
+        token = strtok(line, " ");
+
+        while (token != NULL)
+        {
+            if (strlen(token) > 0)
+            {
+                if (add_ip_to_list(token) == -1)
+                {
+                    fclose(file);
+                    exit_failure("");
+                }
+            }
+
+            token = strtok(NULL, " ");
+        }
+    }
+
+    fclose(file);
 }
