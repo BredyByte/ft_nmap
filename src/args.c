@@ -98,7 +98,7 @@ void	args_options(int argc, char **argv)
 
 				if (speedup == -1)
 				{
-					fprintf(stderr, "ft_nmap: invalid value %s.\n", optarg);
+					fprintf(stderr, "ft_nmap: --speedup invalid value '%s'\n", optarg);
 					exit_failure("");
 				}
 
