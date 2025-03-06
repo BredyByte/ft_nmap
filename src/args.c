@@ -69,17 +69,24 @@ void	args_options(int argc, char **argv)
 			else if (strcmp("port", option_name) == 0)								// ✅
 			{
                 memset(g_data.opts.ports, 0, sizeof(g_data.opts.ports));
-                g_data.opts.port_flag = 1;
+                g_data.opts.port_flag = true;
 				parse_ports(optarg);
 			}
 			else if (strcmp("ip", option_name) == 0)								// ✅
 			{
+                if (g_data.opts.file_flag == true)
+                    exit_failure("ft_nmap: --ip can't be set with --file flag\n");
+
+                g_data.opts.ip_flag = true;
 				add_ip_to_list(optarg);
 			}
 			else if (strcmp("file", option_name) == 0)								// 🟥
 			{
+                if (g_data.opts.ip_flag == true)
+                    exit_failure("ft_nmap: --ip can't be set with --file flag\n");
+
+                g_data.opts.file_flag = true;
 				printf("Reading IPs from file: %s\n", optarg);
-				exit(EXIT_SUCCESS);
 			}
 			else if (strcmp("speedup", option_name) == 0)							// ✅
 			{
@@ -276,14 +283,14 @@ void    print_options(void)
     if (g_data.opts.thrnum > 0)
     {
         printf("Speedup:\n");
-        printf("  threads: %d\n", g_data.opts.thrnum);
+        printf("  threats: %d\n", g_data.opts.thrnum);
     }
 
     putchar('\n');
 
     // scan
     printf("Scan types:\n");
-    printf("  SYN: %i\n  NULL: %i\n  ACK: %i\n  FIN: %i\n  XMAS: %i\n  UDP: %i",
+    printf("  SYN:\t%i\n  NULL:\t%i\n  ACK:\t%i\n  FIN:\t%i\n  XMAS:\t%i\n  UDP:\t%i",
         g_data.opts.scan_types & SCAN_SYN  ? 1 : 0,
         g_data.opts.scan_types & SCAN_NULL ? 1 : 0,
         g_data.opts.scan_types & SCAN_ACK  ? 1 : 0,

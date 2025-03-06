@@ -39,6 +39,8 @@ typedef struct	s_destlst
 typedef struct	s_opts
 {
 	bool		port_flag;
+	bool		file_flag;
+	bool		ip_flag;
 	uint8_t		ports[PORTS_LEN];
 	t_destlst	*host_destlsthdr;
 	uint8_t		thrnum;

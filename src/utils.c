@@ -9,6 +9,8 @@ extern t_nmap	g_data;
 void	defvals_data_opts(void)
 {
     g_data.opts.port_flag = false;
+    g_data.opts.file_flag = false;
+    g_data.opts.ip_flag = false;
 	memset(g_data.opts.ports, 1, sizeof(g_data.opts.ports));
 	g_data.opts.host_destlsthdr = NULL;
 	g_data.opts.thrnum = 0;
@@ -100,8 +102,8 @@ void	print_help(void)
 	printf("ft_nmap [OPTIONS]\n");
 	printf("  --help\tPrint this help message\n");
 	printf("  --ports\tports to scan (eg: 1-10 or 1,2,3 or 1,5-15)\n");
-	printf("  --ip\t\tip addresses/hostname to scan in dot format\n");
+	printf("  --ip\t\tip addresses or hostname to scan in dot format\n");
 	printf("  --file\tFile name containing IP addresses/hostnames to scan, separated by comma\n");
 	printf("  --speedup\t[1-250] number of parallel threads to use\n");
-	printf("  --scan\tSYN/NULL/FIN/XMAS/ACK/UDP\n");
+	printf("  --scan\tSYN/NULL/FIN/XMAS/ACK/UDP (eg, SYN or \"NULL FIN XMAS UDP\")\n");
 }
