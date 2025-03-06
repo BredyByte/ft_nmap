@@ -29,23 +29,23 @@ typedef struct	s_opts
 	uint8_t     scan_types;
 }	t_opts;
 
-/*
-to applie scan type / how bit mask works
-	opts.scan_types |= SCAN_SYN;	// activate SYN-scan
-	opts.scan_types |= SCAN_NULL;	// activate NULL-scan
-	opts.scan_types &= ~SCAN_NULL;	// desactivate NULL-scan
+	/*
+	to applie scan type / how bit mask works
+		opts.scan_types |= SCAN_SYN;	// activate SYN-scan
+		opts.scan_types |= SCAN_NULL;	// activate NULL-scan
+		opts.scan_types &= ~SCAN_NULL;	// desactivate NULL-scan
 
-to check if is applied
-	if (opts.scan_types & SCAN_SYN)
-		printf("SYN scan is enabled\n");
+	to check if is applied
+		if (opts.scan_types & SCAN_SYN)
+			printf("SYN scan is enabled\n");
 
-	if (opts.scan_types & SCAN_UDP)
-		printf("UDP scan is enabled\n");
+		if (opts.scan_types & SCAN_UDP)
+			printf("UDP scan is enabled\n");
 
-check if the few scans are activated at the same time
-	if (opts.scan_types & (SCAN_SYN | SCAN_ACK))
-		printf("SYN or ACK scan is enabled\n");
-*/
+	check if the few scans are activated at the same time
+		if (opts.scan_types & (SCAN_SYN | SCAN_ACK))
+			printf("SYN or ACK scan is enabled\n");
+	*/
 
 typedef struct	s_nmap
 {

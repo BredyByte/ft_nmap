@@ -27,6 +27,8 @@ int					validate_number(const char *str, int max_value);
 struct sockaddr_in	resolve_hostname(const char *hostname);
 int					get_valid_ip(const char *input, struct sockaddr_in *out_ip);
 void				add_ip_to_list(const char *input);
+int					get_scan_flag(const char *token);
+void				apply_scans(const char *input);
 
 void	args_parser(int argc, char **argv)
 {
@@ -52,26 +54,26 @@ void	args_options(int argc, char **argv)
 		{
 			const char *option_name = long_options[option_index].name;
 
-			if (strcmp("help", option_name) == 0)
+			if (strcmp("help", option_name) == 0)									// ✅
 			{
 				print_help();
 				exit(EXIT_SUCCESS);
 			}
-			else if (strcmp("port", option_name) == 0)
+			else if (strcmp("port", option_name) == 0)								// 🟥
 			{
 				printf("Port(s) selected: %s\n", optarg);
 				exit(EXIT_SUCCESS);
 			}
-			else if (strcmp("ip", option_name) == 0)
+			else if (strcmp("ip", option_name) == 0)								// ✅
 			{
 				add_ip_to_list(optarg);
 			}
-			else if (strcmp("file", option_name) == 0)
+			else if (strcmp("file", option_name) == 0)								// 🟥
 			{
 				printf("Reading IPs from file: %s\n", optarg);
 				exit(EXIT_SUCCESS);
 			}
-			else if (strcmp("speedup", option_name) == 0)
+			else if (strcmp("speedup", option_name) == 0)							// ✅
 			{
 				int speedup = validate_number(optarg, 250);
 
@@ -83,8 +85,10 @@ void	args_options(int argc, char **argv)
 
 				g_data.opts.thrnum = speedup;
 			}
-			else if (strcmp("scan", option_name) == 0)
+			else if (strcmp("scan", option_name) == 0)								// 🟥
 			{
+				apply_scans(optarg);
+
 				printf("Scan type(s): %s\n", optarg);
 				exit(EXIT_SUCCESS);
 			}
@@ -169,4 +173,53 @@ void	add_ip_to_list(const char *input)
 		exit_failure("ft_nmap: Failed to create node\n");
 
 	add_node_to_end(&(g_data.opts.host_destlsthdr), new_node);
+}
+
+int	get_scan_flag(const char *token)
+{
+    if (strcmp(token, "SYN") == 0) return SCAN_SYN;
+    if (strcmp(token, "NULL") == 0) return SCAN_NULL;
+    if (strcmp(token, "ACK") == 0) return SCAN_ACK;
+    if (strcmp(token, "FIN") == 0) return SCAN_FIN;
+    if (strcmp(token, "XMAS") == 0) return SCAN_XMAS;
+    if (strcmp(token, "UDP") == 0) return SCAN_UDP;
+    return -1;
+}
+
+void	apply_scans(const char *input)
+{
+	char	*ptr;
+	char	*copy;
+	char	*token;
+	int 	flag;
+
+    if (input == NULL || strlen(input) == 0)
+        exit_failure("ft_nmap: Invalid input apply_scans\n");
+
+    copy = strdup(input);
+    if (!copy)
+        exit_failure("ft_nmap: Memory allocation in apply_scans failed\n");
+
+    ptr = copy;
+
+    while (*ptr == ' ')
+        ptr++;
+
+    while ((token = strsep(&ptr, " ")) != NULL)
+    {
+        if (*token == '\0')
+            continue;
+
+        flag = get_scan_flag(token);
+        if (flag == -1)
+        {
+            fprintf(stderr, "ft_nmap: Invalid scan type '%s'\n", token);
+            free(copy);
+            exit_failure("");
+        }
+
+        g_data.opts.scan_types |= flag;
+    }
+
+    free(copy);
 }

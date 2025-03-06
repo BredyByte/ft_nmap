@@ -11,7 +11,7 @@ void	defvals_data_opts(void)
 	memset(g_data.opts.ports, 0, sizeof(g_data.opts.ports));
 	g_data.opts.host_destlsthdr = NULL;
 	g_data.opts.thrnum = 0;
-	g_data.opts.scan_types = 0;
+	g_data.opts.scan_types = SCAN_SYN | SCAN_NULL | SCAN_ACK | SCAN_FIN | SCAN_XMAS | SCAN_UDP;
 }
 
 void	free_list(t_destlst **head)
