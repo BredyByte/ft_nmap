@@ -29,6 +29,7 @@ int					get_valid_ip(const char *input, struct sockaddr_in *out_ip);
 void				add_ip_to_list(const char *input);
 int					get_scan_flag(const char *token);
 void				apply_scans(const char *input);
+void                print_options(void);
 
 void	args_parser(int argc, char **argv)
 {
@@ -85,12 +86,10 @@ void	args_options(int argc, char **argv)
 
 				g_data.opts.thrnum = speedup;
 			}
-			else if (strcmp("scan", option_name) == 0)								// 🟥
+			else if (strcmp("scan", option_name) == 0)								// ✅
 			{
+                g_data.opts.scan_types = 0;
 				apply_scans(optarg);
-
-				printf("Scan type(s): %s\n", optarg);
-				exit(EXIT_SUCCESS);
 			}
 			else
 			{
@@ -100,6 +99,8 @@ void	args_options(int argc, char **argv)
             }
 		}
 	}
+
+    print_options();
 }
 
 int	validate_number(const char *str, int max_value)
@@ -107,7 +108,7 @@ int	validate_number(const char *str, int max_value)
     char *endptr;
     long value = strtol(str, &endptr, 10);
 
-    if (*endptr != '\0' || value < 0 || value > max_value)
+    if (*endptr != '\0' || value <= 0 || value > max_value)
         return -1;
 
     return (int)value;
@@ -222,4 +223,48 @@ void	apply_scans(const char *input)
     }
 
     free(copy);
+}
+
+void    print_options(void)
+{
+    printf("Selected options:\n\n");
+
+    // ports
+    // in progres...
+
+    // IPs list
+    if (g_data.opts.host_destlsthdr != NULL)
+    {
+        printf("IPs:\n");
+        t_destlst *current = g_data.opts.host_destlsthdr;
+        while (current)
+        {
+            printf("  IPv4: %s, Hostname: %s\n",
+                inet_ntoa(current->dest_ip.sin_addr),
+                current->hostname ? current->hostname : "NULL");
+            current = current->next;
+        }
+    }
+
+    printf("\n");
+
+    // speedup
+    if (g_data.opts.thrnum > 0)
+    {
+        printf("Speedup:\n");
+        printf("  threads: %d\n", g_data.opts.thrnum);
+    }
+
+    printf("\n");
+
+    // scan
+    printf("Scan types:\n");
+    printf("  SYN: %i\n  NULL: %i\n  ACK: %i\n  FIN: %i\n  XMAS: %i\n  UDP: %i",
+        g_data.opts.scan_types & SCAN_SYN  ? 1 : 0,
+        g_data.opts.scan_types & SCAN_NULL ? 1 : 0,
+        g_data.opts.scan_types & SCAN_ACK  ? 1 : 0,
+        g_data.opts.scan_types & SCAN_FIN  ? 1 : 0,
+        g_data.opts.scan_types & SCAN_XMAS ? 1 : 0,
+        g_data.opts.scan_types & SCAN_UDP  ? 1 : 0);
+    printf("\n");
 }
