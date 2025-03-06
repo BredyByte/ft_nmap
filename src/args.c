@@ -27,6 +27,9 @@ int					validate_number(const char *str, int max_value);
 struct sockaddr_in	resolve_hostname(const char *hostname);
 int					get_valid_ip(const char *input, struct sockaddr_in *out_ip);
 void				add_ip_to_list(const char *input);
+int					get_scan_flag(const char *token);
+void				apply_scans(const char *input);
+void                print_options(void);
 
 void	args_parser(int argc, char **argv)
 {
@@ -48,30 +51,33 @@ void	args_options(int argc, char **argv)
 
 	while ((opt = getopt_long(argc, argv, "", long_options, &option_index)) != -1)
     {
+        if (opt == '?') // unknown argument
+            exit_failure("");
+
 		if (opt == 0)
 		{
 			const char *option_name = long_options[option_index].name;
 
-			if (strcmp("help", option_name) == 0)
+			if (strcmp("help", option_name) == 0)									// ✅
 			{
 				print_help();
 				exit(EXIT_SUCCESS);
 			}
-			else if (strcmp("port", option_name) == 0)
+			else if (strcmp("port", option_name) == 0)								// 🟥
 			{
 				printf("Port(s) selected: %s\n", optarg);
 				exit(EXIT_SUCCESS);
 			}
-			else if (strcmp("ip", option_name) == 0)
+			else if (strcmp("ip", option_name) == 0)								// ✅
 			{
 				add_ip_to_list(optarg);
 			}
-			else if (strcmp("file", option_name) == 0)
+			else if (strcmp("file", option_name) == 0)								// 🟥
 			{
 				printf("Reading IPs from file: %s\n", optarg);
 				exit(EXIT_SUCCESS);
 			}
-			else if (strcmp("speedup", option_name) == 0)
+			else if (strcmp("speedup", option_name) == 0)							// ✅
 			{
 				int speedup = validate_number(optarg, 250);
 
@@ -83,19 +89,22 @@ void	args_options(int argc, char **argv)
 
 				g_data.opts.thrnum = speedup;
 			}
-			else if (strcmp("scan", option_name) == 0)
+			else if (strcmp("scan", option_name) == 0)								// ✅
 			{
-				printf("Scan type(s): %s\n", optarg);
-				exit(EXIT_SUCCESS);
+                g_data.opts.scan_types = 0;
+				apply_scans(optarg);
 			}
-			else
-			{
-                fprintf(stderr, "Unknown option: %s\n", option_name);
-                print_help();
-				exit_failure("");
-            }
 		}
 	}
+
+    if (optind < argc)  // additional check for remaining arguments
+    {
+        fprintf(stderr, "ft_nmap: unknown argument: %s\n", argv[optind]);
+        print_help();
+        exit_failure("");
+    }
+
+    print_options();
 }
 
 int	validate_number(const char *str, int max_value)
@@ -103,7 +112,7 @@ int	validate_number(const char *str, int max_value)
     char *endptr;
     long value = strtol(str, &endptr, 10);
 
-    if (*endptr != '\0' || value < 0 || value > max_value)
+    if (*endptr != '\0' || value <= 0 || value > max_value)
         return -1;
 
     return (int)value;
@@ -169,4 +178,97 @@ void	add_ip_to_list(const char *input)
 		exit_failure("ft_nmap: Failed to create node\n");
 
 	add_node_to_end(&(g_data.opts.host_destlsthdr), new_node);
+}
+
+int	get_scan_flag(const char *token)
+{
+    if (strcmp(token, "SYN") == 0) return SCAN_SYN;
+    if (strcmp(token, "NULL") == 0) return SCAN_NULL;
+    if (strcmp(token, "ACK") == 0) return SCAN_ACK;
+    if (strcmp(token, "FIN") == 0) return SCAN_FIN;
+    if (strcmp(token, "XMAS") == 0) return SCAN_XMAS;
+    if (strcmp(token, "UDP") == 0) return SCAN_UDP;
+    return -1;
+}
+
+void	apply_scans(const char *input)
+{
+	char	*ptr;
+	char	*copy;
+	char	*token;
+	int 	flag;
+
+    if (input == NULL || strlen(input) == 0)
+        exit_failure("ft_nmap: Invalid input apply_scans\n");
+
+    copy = strdup(input);
+    if (!copy)
+        exit_failure("ft_nmap: Memory allocation in apply_scans failed\n");
+
+    ptr = copy;
+
+    while (*ptr == ' ')
+        ptr++;
+
+    while ((token = strsep(&ptr, " ")) != NULL)
+    {
+        if (*token == '\0')
+            continue;
+
+        flag = get_scan_flag(token);
+        if (flag == -1)
+        {
+            fprintf(stderr, "ft_nmap: Invalid scan type '%s'\n", token);
+            free(copy);
+            exit_failure("");
+        }
+
+        g_data.opts.scan_types |= flag;
+    }
+
+    free(copy);
+}
+
+void    print_options(void)
+{
+    printf("Selected options:\n\n");
+
+    // ports
+    // in progres...
+
+    // IPs list
+    if (g_data.opts.host_destlsthdr != NULL)
+    {
+        printf("IPs:\n");
+        t_destlst *current = g_data.opts.host_destlsthdr;
+        while (current)
+        {
+            printf("  IPv4: %s, Hostname: %s\n",
+                inet_ntoa(current->dest_ip.sin_addr),
+                current->hostname ? current->hostname : "NULL");
+            current = current->next;
+        }
+    }
+
+    printf("\n");
+
+    // speedup
+    if (g_data.opts.thrnum > 0)
+    {
+        printf("Speedup:\n");
+        printf("  threads: %d\n", g_data.opts.thrnum);
+    }
+
+    printf("\n");
+
+    // scan
+    printf("Scan types:\n");
+    printf("  SYN: %i\n  NULL: %i\n  ACK: %i\n  FIN: %i\n  XMAS: %i\n  UDP: %i",
+        g_data.opts.scan_types & SCAN_SYN  ? 1 : 0,
+        g_data.opts.scan_types & SCAN_NULL ? 1 : 0,
+        g_data.opts.scan_types & SCAN_ACK  ? 1 : 0,
+        g_data.opts.scan_types & SCAN_FIN  ? 1 : 0,
+        g_data.opts.scan_types & SCAN_XMAS ? 1 : 0,
+        g_data.opts.scan_types & SCAN_UDP  ? 1 : 0);
+    printf("\n");
 }
