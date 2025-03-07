@@ -14,6 +14,27 @@
 # include <netinet/ip.h>
 # include <netinet/tcp.h>
 # include <stdbool.h>
+# include <stdlib.h>
+# include <stdio.h>
+# include <string.h>
+# include <errno.h>
+# include <fcntl.h>
+# include <arpa/inet.h>
+# include <unistd.h>
+# include <netinet/ip.h>
+# include <netinet/tcp.h>
+
+# include <stdio.h>
+# include <string.h>
+# include <stdlib.h>
+# include <unistd.h>
+# include <errno.h>
+# include <time.h>
+# include <arpa/inet.h>
+# include <netinet/ip.h>
+# include <netinet/tcp.h>
+# include <sys/socket.h>
+
 
 # define PROTO_TCP IPPROTO_TCP
 # define PROTO_UDP IPPROTO_UDP
