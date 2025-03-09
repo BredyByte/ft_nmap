@@ -101,7 +101,7 @@ void	print_help(void)
 	printf("Help Screen\n");
 	printf("ft_nmap [OPTIONS]\n");
 	printf("  --help\tPrint this help message\n");
-	printf("  --ports\tports to scan (eg: 1-10 or 1,2,3 or 1,5-15)\n");
+	printf("  --port\tports to scan (eg: 1-10 or 1,2,3 or 1,5-15)\n");
 	printf("  --ip\t\tip addresses or hostname to scan in dot format\n");
 	printf("  --file\tFile name containing IP addresses/hostnames to scan, separated by comma\n");
 	printf("  --speedup\t[1-250] number of parallel threads to use\n");
