@@ -34,6 +34,7 @@
 # include <netinet/ip.h>
 # include <netinet/tcp.h>
 # include <sys/socket.h>
+#include <time.h>
 
 
 # define PROTO_TCP IPPROTO_TCP

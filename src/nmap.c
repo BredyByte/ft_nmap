@@ -93,10 +93,6 @@ int set_nonblocking(int sock) {
     return fcntl(sock, F_SETFL, flags | O_NONBLOCK);
 }
 
-#include <pcap.h>
-#include <time.h>
-
-
 /* --- Helper Structures --- */
 typedef struct {
     int used;
