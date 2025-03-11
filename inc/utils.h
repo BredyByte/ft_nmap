@@ -10,8 +10,8 @@ void		exit_failure(char *str);
 void		print_help(void);
 
 void		init_queue(t_queue *queue);
-t_queue_node* create_node(const char *ip, int port, char scan);
-void		enqueue(t_queue *queue, const char *ip, int port, char scan);
-t_queue_node* dequeue(t_queue *queue);
+t_queue_node* create_queue_node(int ip, int port);
+void		enqueue(int ip, int port);
+t_queue_node* dequeue();
 
 # endif

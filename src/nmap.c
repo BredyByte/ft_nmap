@@ -1,4 +1,5 @@
 #include "defines.h"
+#include "utils.h"
 
 extern t_nmap g_data;
 
@@ -49,30 +50,6 @@ uint32_t get_local_ip() {
     return local.sin_addr.s_addr;
 }
 
-#define NUM_SCAN_TYPES 6  // Order: SYN, NULL, ACK, FIN, XMAS, UDP
-
-/* --- Updated Result Enumeration --- */
-typedef enum {
-    SCAN_RESULT_NO_RESPONSE,     // initial state: no reply received
-    SCAN_RESULT_OPEN,
-    SCAN_RESULT_OPEN_FILTERED,   // ambiguous: open|filtered (no response in NULL, FIN, XMAS, UDP)
-    SCAN_RESULT_UNFILTERED,
-    SCAN_RESULT_CLOSED,
-    SCAN_RESULT_FILTERED         // unambiguous filtered (for SYN/ACK, ACK scans)
-} scan_result_t;
-
-typedef struct {
-    int port;
-    scan_result_t results[NUM_SCAN_TYPES];
-} port_result_t;
-
-/* --- TCP Socket Information --- */
-// One TCP socket per port for the TCP-based scans.
-typedef struct {
-    int sock;
-    int port;
-    int scan_mask; // bitmask of TCP scan types sent for this port (SCAN_SYN|SCAN_NULL|SCAN_ACK|SCAN_FIN|SCAN_XMAS)
-} tcp_sock_info_t;
 
 
 
@@ -285,20 +262,16 @@ void process_udp_responses(int udp_sock, uint8_t *ports, port_result_t results[]
 }
 
 /* --- Mark Unanswered UDP Scans --- */
-void mark_unanswered_udp_scans(uint8_t *ports, port_result_t results[]) {
-    for (int port = 0; port < PORTS_LEN; port++) {
-        if (!ports[port])
-            continue;
-        if (results[port].results[5] == SCAN_RESULT_NO_RESPONSE)
-            results[port].results[5] = SCAN_RESULT_OPEN_FILTERED;
-    }
+void mark_unanswered_udp_scans(uint32_t port, port_result_t results[]) {
+    if (results[port].results[5] == SCAN_RESULT_NO_RESPONSE)
+        results[port].results[5] = SCAN_RESULT_OPEN_FILTERED;
 }
 
 /* --- Refactored sendAllPackets Function --- */
-void sendAllPackets(uint32_t ip, uint8_t *ports, int types, port_result_t results[]) {
-    uint32_t local_ip = get_local_ip();
-    int tcp_scan_types = types & (SCAN_SYN | SCAN_NULL | SCAN_ACK | SCAN_FIN | SCAN_XMAS);
-    int do_udp = (types & SCAN_UDP) ? 1 : 0;
+void sendAllPackets(uint32_t ip, uint32_t port, uint32_t local_ip, port_result_t results[]) {
+    int tcp_scan_types = g_data.opts.scan_types;
+    tcp_scan_types &= ~SCAN_UDP;
+    int do_udp = (tcp_scan_types & SCAN_UDP) ? 1 : 0;
     int raw_sock = -1, udp_sock = -1;
 
     if (tcp_scan_types) {
@@ -325,26 +298,15 @@ void sendAllPackets(uint32_t ip, uint8_t *ports, int types, port_result_t result
     dest.sin_family = AF_INET;
     dest.sin_addr.s_addr = ip;
 
-    /* Initialize results to NO_RESPONSE for all scans */
-    for (int i = 0; i < PORTS_LEN; i++) {
-        results[i].port = i;
-        for (int j = 0; j < NUM_SCAN_TYPES; j++)
-            results[i].results[j] = SCAN_RESULT_NO_RESPONSE;
-    }
-
     mapping_entry *lookup = calloc(1 << 16, sizeof(mapping_entry));
     if (!lookup) { perror("calloc lookup"); exit(1); }
 
-    /* For each port, send TCP and/or UDP packets */
-    for (int port = 1; port < PORTS_LEN; port++) {
-        if (!ports[port])
-            continue;
-        dest.sin_port = htons(port);
-        if (tcp_scan_types)
-            send_tcp_packets_for_port(raw_sock, &dest, local_ip, port, tcp_scan_types, lookup);
-        if (do_udp)
-            send_udp_packet(udp_sock, &dest, port);
-    }
+    dest.sin_port = htons(port);
+    if (tcp_scan_types)
+        send_tcp_packets_for_port(raw_sock, &dest, local_ip, port, tcp_scan_types, lookup);
+    if (do_udp)
+        send_udp_packet(udp_sock, &dest, port);
+
 
     /* Process TCP responses and mark unanswered scans */
     process_tcp_responses(raw_sock, &dest, lookup, results, tcp_scan_types);
@@ -364,11 +326,11 @@ void sendAllPackets(uint32_t ip, uint8_t *ports, int types, port_result_t result
             ssize_t n = recvfrom(udp_sock, buf, sizeof(buf), 0, (struct sockaddr*)&from, &fromlen);
             if (n >= 0) {
                 int resp_port = ntohs(from.sin_port);
-                if (resp_port < PORTS_LEN && ports[resp_port])
+                if (resp_port < PORTS_LEN && resp_port)
                     results[resp_port].results[5] = SCAN_RESULT_CLOSED;
             }
         }
-        mark_unanswered_udp_scans(ports, results);
+        mark_unanswered_udp_scans(port, results);
         close(udp_sock);
     }
     if (tcp_scan_types)
@@ -376,8 +338,7 @@ void sendAllPackets(uint32_t ip, uint8_t *ports, int types, port_result_t result
     free(lookup);
 }
 
-void print_scan_results(port_result_t results[], size_t len, uint8_t *ports, int scan_types) {
-    (void)len;
+void print_scan_results(port_result_t results[], uint8_t *ports, int scan_types) {
     printf("Scan results:\n");
     for (int i = 0; i < PORTS_LEN; i++) {
         if (ports[i] != 1)
@@ -399,12 +360,31 @@ void print_scan_results(port_result_t results[], size_t len, uint8_t *ports, int
 }
 
 void nmap_performance() {
-    port_result_t results[PORTS_LEN];
-    memset(results, 0, sizeof(results));
+    
+        /* Initialize results to NO_RESPONSE for all scans */
+    for (int i = 0; i < PORTS_LEN; i++) {
+        g_data.opts.results[i].port = i;
+        for (int j = 0; j < NUM_SCAN_TYPES; j++)
+            g_data.opts.results[i].results[j] = SCAN_RESULT_NO_RESPONSE;
+    }
+
+
+
     t_destlst *dest = g_data.opts.host_destlsthdr;
     while (dest) {
-        sendAllPackets(dest->dest_ip.sin_addr.s_addr, g_data.opts.ports, g_data.opts.scan_types, results);
+        for (int port = 0; port < PORTS_LEN; port++)
+            if (g_data.opts.ports[port])
+                enqueue(dest->dest_ip.sin_addr.s_addr, port);
         dest = dest->next;
     }
-    print_scan_results(results, PORTS_LEN, g_data.opts.ports, g_data.opts.scan_types);
+
+    dest = g_data.opts.host_destlsthdr;
+    int local_ip = get_local_ip();
+    while (dest) {
+        t_queue_node *node = dequeue();        
+        sendAllPackets(node->ip, node->port, local_ip, g_data.opts.results);
+        dest = dest->next;
+    }
+
+    print_scan_results(g_data.opts.results, g_data.opts.ports, g_data.opts.scan_types);
 }
