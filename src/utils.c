@@ -152,3 +152,108 @@ t_queue_node* dequeue(t_queue *queue) {
     }
     return node;
 }
+
+const char  *get_service_name(uint16_t port)
+{
+    switch (port)
+    {
+        case 1: return "tcpmux";
+        case 7: return "echo";
+        case 9: return "discard";
+        case 11: return "systat";
+        case 13: return "daytime";
+        case 15: return "netstat";
+        case 17: return "qotd";
+        case 19: return "chargen";
+        case 20: return "ftp-data";
+        case 21: return "ftp/fsp";
+        case 22: return "ssh";
+        case 23: return "telnet";
+        case 25: return "smtp";
+        case 37: return "time";
+        case 43: return "whois";
+        case 49: return "tacacs";
+        case 53: return "domain";
+        case 67: return "bootps";
+        case 68: return "bootpc";
+        case 69: return "tftp";
+        case 70: return "gopher";
+        case 79: return "finger";
+        case 80: return "http";
+        case 88: return "kerberos";
+        case 102: return "iso-tsap";
+        case 104: return "acr-nema";
+        case 110: return "pop3";
+        case 111: return "sunrpc";
+        case 113: return "auth";
+        case 119: return "nntp";
+        case 123: return "ntp";
+        case 135: return "epmap";
+        case 137: return "netbios-ns";
+        case 138: return "netbios-dgm";
+        case 139: return "netbios-ssn";
+        case 143: return "imap2";
+        case 161: return "snmp";
+        case 162: return "snmp-trap";
+        case 163: return "cmip-man";
+        case 164: return "cmip-agent";
+        case 174: return "mailq";
+        case 177: return "xdmcp";
+        case 179: return "bgp";
+        case 199: return "smux";
+        case 209: return "qmtp";
+        case 210: return "z3950";
+        case 213: return "ipx";
+        case 319: return "ptp-event";
+        case 320: return "ptp-general";
+        case 345: return "pawserv";
+        case 346: return "zserv";
+        case 369: return "rpc2portmap";
+        case 370: return "codaauth2";
+        case 371: return "clearcase";
+        case 389: return "ldap";
+        case 427: return "svrloc";
+        case 443: return "https";
+        case 444: return "snpp";
+        case 445: return "microsoft-ds";
+        case 464: return "kpasswd";
+        case 465: return "submissions";
+        case 487: return "saft";
+        case 500: return "isakmp";
+        case 512: return "exec/biff";
+        case 513: return "login/who";
+        case 514: return "shell/syslog";
+        case 515: return "printer";
+        case 517: return "talk";
+        case 518: return "ntalk";
+        case 520: return "route";
+        case 538: return "gdomap";
+        case 540: return "uucp";
+        case 543: return "klogin";
+        case 544: return "kshell";
+        case 546: return "dhcpv6-client";
+        case 547: return "dhcpv6-server";
+        case 548: return "afpovertcp";
+        case 554: return "rtsp";
+        case 563: return "nntps";
+        case 587: return "submission";
+        case 607: return "nqs";
+        case 623: return "asf-rmcp";
+        case 628: return "qmqp";
+        case 631: return "ipp";
+        case 636: return "ldaps";
+        case 646: return "ldp";
+        case 655: return "tinc";
+        case 706: return "silc";
+        case 749: return "kerberos-adm";
+        case 853: return "domain-s";
+        case 873: return "rsync";
+        case 989: return "ftps-data";
+        case 990: return "ftps";
+        case 992: return "telnets";
+        case 993: return "imaps";
+        case 995: return "pop3s";
+        default: return "Unassigned";
+    }
+}
+

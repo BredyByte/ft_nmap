@@ -8,6 +8,7 @@ t_destlst	*create_node(const char *hostname, struct sockaddr_in ip);
 void		memfree(void);
 void		exit_failure(char *str);
 void		print_help(void);
+const char 	*get_service_name(uint16_t port);
 
 void		init_queue(t_queue *queue);
 t_queue_node* create_node(const char *ip, int port, char scan);
