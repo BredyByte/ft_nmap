@@ -106,6 +106,8 @@ typedef struct	s_opts
 	uint8_t     scan_types;
     port_result_t results[PORTS_LEN];
     t_queue queue;
+    //mutex
+    pthread_mutex_t mutex;
 }	t_opts;
 
 	/*

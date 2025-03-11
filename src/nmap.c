@@ -359,32 +359,14 @@ void print_scan_results(port_result_t results[], uint8_t *ports, int scan_types)
     }
 }
 
-void nmap_performance() {
-    
-        /* Initialize results to NO_RESPONSE for all scans */
-    for (int i = 0; i < PORTS_LEN; i++) {
-        g_data.opts.results[i].port = i;
-        for (int j = 0; j < NUM_SCAN_TYPES; j++)
-            g_data.opts.results[i].results[j] = SCAN_RESULT_NO_RESPONSE;
-    }
+void nmap_performance(void *ip) {
+    uint32_t local_ip = *(uint32_t*)ip;
 
-
-
-    t_destlst *dest = g_data.opts.host_destlsthdr;
-    while (dest) {
-        for (int port = 0; port < PORTS_LEN; port++)
-            if (g_data.opts.ports[port])
-                enqueue(dest->dest_ip.sin_addr.s_addr, port);
-        dest = dest->next;
-    }
-
-    dest = g_data.opts.host_destlsthdr;
-    int local_ip = get_local_ip();
-    while (dest) {
-        t_queue_node *node = dequeue();        
+    t_queue_node *node = dequeue();
+    while (node) {
         sendAllPackets(node->ip, node->port, local_ip, g_data.opts.results);
-        dest = dest->next;
+        free(node);
+        node = dequeue();
     }
 
-    print_scan_results(g_data.opts.results, g_data.opts.ports, g_data.opts.scan_types);
 }

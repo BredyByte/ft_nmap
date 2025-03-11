@@ -9,10 +9,11 @@ void		memfree(void);
 void		exit_failure(char *str);
 void		print_help(void);
 const char 	*get_service_name(uint16_t port);
-
 void		init_queue(t_queue *queue);
 t_queue_node* create_queue_node(int ip, int port);
 void		enqueue(int ip, int port);
 t_queue_node* dequeue();
+uint32_t        get_local_ip();
+void            print_scan_results(port_result_t *results, uint8_t *port, int scan_types);
 
 # endif

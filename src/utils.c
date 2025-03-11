@@ -145,15 +145,18 @@ void enqueue(int ip, int port) {
 
 // Dequeue: Remove the node at the head of the queue and return it
 t_queue_node* dequeue() {
-    //mutex
+    pthread_mutex_lock(&g_data.opts.mutex);
     if (!g_data.opts.queue.head)
+    {
+        pthread_mutex_unlock(&g_data.opts.mutex);
         return NULL;
+    }
     t_queue_node *node = g_data.opts.queue.head;
     g_data.opts.queue.head = node->next;
-    //mutex
     if (!g_data.opts.queue.head) {
         g_data.opts.queue.tail = NULL;
     }
+    pthread_mutex_unlock(&g_data.opts.mutex);
     return node;
 }
 
