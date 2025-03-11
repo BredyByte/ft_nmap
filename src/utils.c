@@ -1,4 +1,5 @@
 # include "defines.h"
+# include "utils.h"
 # include <stdio.h>
 # include <unistd.h>
 # include <stdlib.h>
@@ -15,6 +16,8 @@ void	defvals_data_opts(void)
 	g_data.opts.host_destlsthdr = NULL;
 	g_data.opts.thrnum = 0;
 	g_data.opts.scan_types = SCAN_SYN | SCAN_NULL | SCAN_ACK | SCAN_FIN | SCAN_XMAS | SCAN_UDP;
+    init_queue(&g_data.opts.queue);
+    memset(g_data.opts.results, 0, sizeof(g_data.opts.results));
 }
 
 void	free_list(t_destlst **head)
@@ -115,23 +118,22 @@ void init_queue(t_queue *queue) {
 }
 
 // Create a new node with provided IP, port, and scan type
-t_queue_node* create_node(const char *ip, int port, char scan) {
+t_queue_node* create_queue_node(int ip, int port) {
     t_queue_node *node = malloc(sizeof(t_queue_node));
     if (!node) {
         perror("malloc failed");
         exit(EXIT_FAILURE);
     }
-    strncpy(node->ip, ip, sizeof(node->ip) - 1);
-    node->ip[sizeof(node->ip)-1] = '\0';
+    node->ip = ip;
     node->port = port;
-    node->scan = scan;
     node->next = NULL;
     return node;
 }
 
 // Enqueue: Insert a new node at the tail of the queue
-void enqueue(t_queue *queue, const char *ip, int port, char scan) {
-    t_queue_node *node = create_node(ip, port, scan);
+void enqueue(int ip, int port) {
+    t_queue_node *node = create_queue_node(ip, port);
+    t_queue *queue = &g_data.opts.queue;
     if (queue->tail) {
         queue->tail->next = node;
     }
@@ -142,13 +144,15 @@ void enqueue(t_queue *queue, const char *ip, int port, char scan) {
 }
 
 // Dequeue: Remove the node at the head of the queue and return it
-t_queue_node* dequeue(t_queue *queue) {
-    if (!queue->head)
+t_queue_node* dequeue() {
+    //mutex
+    if (!g_data.opts.queue.head)
         return NULL;
-    t_queue_node *node = queue->head;
-    queue->head = node->next;
-    if (!queue->head) {
-        queue->tail = NULL;
+    t_queue_node *node = g_data.opts.queue.head;
+    g_data.opts.queue.head = node->next;
+    //mutex
+    if (!g_data.opts.queue.head) {
+        g_data.opts.queue.tail = NULL;
     }
     return node;
 }

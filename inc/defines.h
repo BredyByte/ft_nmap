@@ -41,6 +41,30 @@
 # define PROTO_TCP IPPROTO_TCP
 # define PROTO_UDP IPPROTO_UDP
 # define PORTS_LEN 1025
+# define NUM_SCAN_TYPES 6  // Order: SYN, NULL, ACK, FIN, XMAS, UDP
+
+/* --- Updated Result Enumeration --- */
+typedef enum {
+    SCAN_RESULT_NO_RESPONSE,     // initial state: no reply received
+    SCAN_RESULT_OPEN,
+    SCAN_RESULT_OPEN_FILTERED,   // ambiguous: open|filtered (no response in NULL, FIN, XMAS, UDP)
+    SCAN_RESULT_UNFILTERED,
+    SCAN_RESULT_CLOSED,
+    SCAN_RESULT_FILTERED         // unambiguous filtered (for SYN/ACK, ACK scans)
+} scan_result_t;
+
+typedef struct {
+    int port;
+    scan_result_t results[NUM_SCAN_TYPES];
+} port_result_t;
+
+/* --- TCP Socket Information --- */
+// One TCP socket per port for the TCP-based scans.
+typedef struct {
+    int sock;
+    int port;
+    int scan_mask; // bitmask of TCP scan types sent for this port (SCAN_SYN|SCAN_NULL|SCAN_ACK|SCAN_FIN|SCAN_XMAS)
+} tcp_sock_info_t;
 
 typedef enum	e_scan_type
 {
@@ -53,9 +77,8 @@ typedef enum	e_scan_type
 }   t_scan_type;
 
 typedef struct s_queue_node {
-    char ip[16];              // Store IPv4 address as string (adjust size if needed)
+    int ip;
     int port;
-    char scan;                // Holds a scan type (using values from t_scan_type)
     struct s_queue_node *next;
 } t_queue_node;
 
@@ -81,6 +104,8 @@ typedef struct	s_opts
 	t_destlst	*host_destlsthdr;
 	uint8_t		thrnum;
 	uint8_t     scan_types;
+    port_result_t results[PORTS_LEN];
+    t_queue queue;
 }	t_opts;
 
 	/*
