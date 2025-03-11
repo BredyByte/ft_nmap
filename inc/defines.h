@@ -34,8 +34,8 @@
 # include <netinet/ip.h>
 # include <netinet/tcp.h>
 # include <sys/socket.h>
-#include <time.h>
-
+# include <time.h>
+# include <limits.h>
 
 # define PROTO_TCP IPPROTO_TCP
 # define PROTO_UDP IPPROTO_UDP

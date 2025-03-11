@@ -324,6 +324,12 @@ int parse_port_range(const char *range_str)
     if ((dash_pos = strchr(range_str, '-')) == NULL)
         return 0;
 
+    if (strlen (range_str) > 10)
+    {
+        fprintf(stderr, "ft_nmap: --port invalid range %s\n", range_str);
+        return -1;
+    }
+
     // dividing into two parts
     strncpy(start_str, range_str, dash_pos - range_str);
     start_str[dash_pos - range_str] = '\0'; // Null-terminate the start string

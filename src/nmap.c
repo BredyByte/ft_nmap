@@ -399,9 +399,6 @@ void print_scan_results(port_result_t results[], size_t len, uint8_t *ports, int
 }
 
 void nmap_performance() {
-    struct in_addr src_addr;
-    src_addr.s_addr = get_local_ip();
-    printf("Local IP: %s\n", inet_ntoa(src_addr));
     port_result_t results[PORTS_LEN];
     memset(results, 0, sizeof(results));
     t_destlst *dest = g_data.opts.host_destlsthdr;
