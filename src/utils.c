@@ -107,3 +107,48 @@ void	print_help(void)
 	printf("  --speedup\t[1-250] number of parallel threads to use\n");
 	printf("  --scan\tSYN/NULL/FIN/XMAS/ACK/UDP (eg, SYN or \"NULL FIN XMAS UDP\")\n");
 }
+
+
+// Initialize the queue by setting head and tail to NULL
+void init_queue(t_queue *queue) {
+    queue->head = queue->tail = NULL;
+}
+
+// Create a new node with provided IP, port, and scan type
+t_queue_node* create_node(const char *ip, int port, char scan) {
+    t_queue_node *node = malloc(sizeof(t_queue_node));
+    if (!node) {
+        perror("malloc failed");
+        exit(EXIT_FAILURE);
+    }
+    strncpy(node->ip, ip, sizeof(node->ip) - 1);
+    node->ip[sizeof(node->ip)-1] = '\0';
+    node->port = port;
+    node->scan = scan;
+    node->next = NULL;
+    return node;
+}
+
+// Enqueue: Insert a new node at the tail of the queue
+void enqueue(t_queue *queue, const char *ip, int port, char scan) {
+    t_queue_node *node = create_node(ip, port, scan);
+    if (queue->tail) {
+        queue->tail->next = node;
+    }
+    queue->tail = node;
+    if (!queue->head) {
+        queue->head = node;
+    }
+}
+
+// Dequeue: Remove the node at the head of the queue and return it
+t_queue_node* dequeue(t_queue *queue) {
+    if (!queue->head)
+        return NULL;
+    t_queue_node *node = queue->head;
+    queue->head = node->next;
+    if (!queue->head) {
+        queue->tail = NULL;
+    }
+    return node;
+}
