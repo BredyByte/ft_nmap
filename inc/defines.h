@@ -23,6 +23,7 @@
 # include <unistd.h>
 # include <netinet/ip.h>
 # include <netinet/tcp.h>
+# include <pthread.h>
 
 # include <stdio.h>
 # include <string.h>
@@ -50,6 +51,19 @@ typedef enum	e_scan_type
     SCAN_XMAS  = 1 << 4,   // 00010000 = 16
     SCAN_UDP   = 1 << 5    // 00100000 = 32
 }   t_scan_type;
+
+typedef struct s_queue_node {
+    char ip[16];              // Store IPv4 address as string (adjust size if needed)
+    int port;
+    char scan;                // Holds a scan type (using values from t_scan_type)
+    struct s_queue_node *next;
+} t_queue_node;
+
+// FIFO queue structure with pointers to head and tail nodes
+typedef struct s_queue {
+    t_queue_node *head;
+    t_queue_node *tail;
+} t_queue;
 
 typedef struct	s_destlst
 {
