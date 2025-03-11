@@ -48,8 +48,8 @@ void	args_parser(int argc, char **argv)
 
 	args_options(argc, argv);
 
-    if (g_data.opts.file_flag == false || g_data.opts.ip_flag == false)
-        exit_failure("ft_nmap: --ip or --file is required");
+    if (g_data.opts.file_flag == false && g_data.opts.ip_flag == false)
+        exit_failure("ft_nmap: --ip or --file is required\n");
 }
 
 void	args_options(int argc, char **argv)
