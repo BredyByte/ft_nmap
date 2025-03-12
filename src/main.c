@@ -26,7 +26,7 @@ int	main(int argc, char **argv)
     t_destlst *dest = g_data.opts.host_destlsthdr;
     while (dest) {
         for (int port = 0; port < PORTS_LEN; port++)
-            if (g_data.opts.ports[port])
+            if (g_data.opts.ports[port].is_active)
                 enqueue(dest->dest_ip.sin_addr.s_addr, port);
         dest = dest->next;
     }
@@ -45,7 +45,7 @@ int	main(int argc, char **argv)
         pthread_join(thread, NULL);
     }
 
-    print_scan_results(g_data.opts.results, g_data.opts.ports, g_data.opts.scan_types);
+    //print_scan_results(g_data.opts.results, g_data.opts.ports, g_data.opts.scan_types);
 
 	memfree();
 	return 0;

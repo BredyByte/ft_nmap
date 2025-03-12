@@ -8,7 +8,7 @@ unsigned short csum(unsigned short *ptr, int nbytes) {
     long sum = 0;
     unsigned short oddbyte;
     unsigned short answer;
-    
+
     while(nbytes > 1) {
         sum += *ptr++;
         nbytes -= 2;

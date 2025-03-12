@@ -7,12 +7,21 @@
 
 extern t_nmap	g_data;
 
+void    init_ports(t_port_info *ports, size_t length)
+{
+    for (size_t i = 0; i < length; i++)
+    {
+        ports[i].is_active = true;
+        ports[i].service_name = get_service_name(i);
+    }
+}
+
 void	defvals_data_opts(void)
 {
     g_data.opts.port_flag = false;
     g_data.opts.file_flag = false;
     g_data.opts.ip_flag = false;
-	memset(g_data.opts.ports, 1, sizeof(g_data.opts.ports));
+	init_ports(g_data.opts.ports, PORTS_LEN);
 	g_data.opts.host_destlsthdr = NULL;
 	g_data.opts.thrnum = 0;
 	g_data.opts.scan_types = SCAN_SYN | SCAN_NULL | SCAN_ACK | SCAN_FIN | SCAN_XMAS | SCAN_UDP;

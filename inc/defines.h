@@ -95,12 +95,18 @@ typedef struct	s_destlst
 	struct s_destlst	*next;
 }	t_destlst;
 
+typedef struct s_port_info
+{
+    bool            is_active;
+    const char      *service_name;
+}   t_port_info;
+
 typedef struct	s_opts
 {
 	bool		port_flag;
 	bool		file_flag;
 	bool		ip_flag;
-	uint8_t		ports[PORTS_LEN];
+	t_port_info ports[PORTS_LEN];
 	t_destlst	*host_destlsthdr;
 	uint8_t		thrnum;
 	uint8_t     scan_types;

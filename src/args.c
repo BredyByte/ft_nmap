@@ -50,6 +50,8 @@ void	args_parser(int argc, char **argv)
 
     if (g_data.opts.file_flag == false && g_data.opts.ip_flag == false)
         exit_failure("ft_nmap: --ip or --file is required\n");
+
+    print_options();
 }
 
 void	args_options(int argc, char **argv)
@@ -74,7 +76,8 @@ void	args_options(int argc, char **argv)
 			}
 			else if (strcmp("port", option_name) == 0)
 			{
-                memset(g_data.opts.ports, 0, sizeof(g_data.opts.ports));
+                for (int i = 0; i < PORTS_LEN; ++i)
+                    g_data.opts.ports[i].is_active = false;
                 g_data.opts.port_flag = true;
 				parse_ports(optarg);
 			}
@@ -121,8 +124,6 @@ void	args_options(int argc, char **argv)
         print_help();
         exit_failure("");
     }
-
-    print_options();
 }
 
 int validate_number(const char *str, int max_value)
@@ -265,15 +266,14 @@ void    print_options(void)
     printf("Selected options:\n\n");
 
     // ports
-    printf("Ports:\n  ");
+    printf("Ports:\n");
     if (g_data.opts.port_flag)
     {
         for (int i = 0; i < (PORTS_LEN); ++i)
         {
-            if (g_data.opts.ports[i])
-                printf("%i ", i);
+            if (g_data.opts.ports[i].is_active)
+                printf("%s %i\n", g_data.opts.ports[i].service_name, i);
         }
-        putchar('\n');
     }
     else
         printf("1-1024\n");
@@ -348,9 +348,9 @@ int parse_port_range(const char *range_str)
         return -1;
     }
 
-    // setting the ports to 1 (enabled);
+    // setting the ports to is active
     for (int i = start; i <= end; i++)
-        g_data.opts.ports[i] = 1;
+        g_data.opts.ports[i].is_active = true;
 
     return 0;
 }
@@ -389,7 +389,7 @@ void    parse_ports(const char *input)
                 free(copy);
                 exit_failure("");
             }
-            g_data.opts.ports[port] = 1;
+            g_data.opts.ports[port].is_active = true;
         }
         token = strtok(NULL, ",");
     }
