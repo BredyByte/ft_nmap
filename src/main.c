@@ -14,20 +14,18 @@ int	main(int argc, char **argv)
 
 	args_parser(argc, argv);
 
-            /* Initialize results to NO_RESPONSE for all scans */
-    for (int i = 0; i < PORTS_LEN; i++) {
-        g_data.opts.results[i].port = i;
-        for (int j = 0; j < NUM_SCAN_TYPES; j++)
-            g_data.opts.results[i].results[j] = SCAN_RESULT_NO_RESPONSE;
-    }
-
-
 
     t_destlst *dest = g_data.opts.host_destlsthdr;
     while (dest) {
         for (int port = 0; port < PORTS_LEN; port++)
+        {
             if (g_data.opts.ports[port].is_active)
-                enqueue(dest->dest_ip.sin_addr.s_addr, port);
+            {
+                for (int j = 0; j < NUM_SCAN_TYPES; j++)
+                    dest->results->results[j] = SCAN_RESULT_NO_RESPONSE;
+                enqueue(dest->dest_ip.sin_addr.s_addr, port, dest->results);
+            }
+        }
         dest = dest->next;
     }
     int local_ip = get_local_ip();
@@ -45,8 +43,11 @@ int	main(int argc, char **argv)
         pthread_join(thread, NULL);
     }
 
-    //print_scan_results(g_data.opts.results, g_data.opts.ports, g_data.opts.scan_types);
-
+    dest = g_data.opts.host_destlsthdr;
+    while (dest) {
+    print_scan_results(dest->results, g_data.opts.ports, g_data.opts.scan_types);
+    dest = dest->next;
+    }
 	memfree();
 	return 0;
 }

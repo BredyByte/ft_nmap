@@ -26,7 +26,6 @@ void	defvals_data_opts(void)
 	g_data.opts.thrnum = 0;
 	g_data.opts.scan_types = SCAN_SYN | SCAN_NULL | SCAN_ACK | SCAN_FIN | SCAN_XMAS | SCAN_UDP;
     init_queue(&g_data.opts.queue);
-    memset(g_data.opts.results, 0, sizeof(g_data.opts.results));
 }
 
 void	free_list(t_destlst **head)
@@ -127,7 +126,7 @@ void init_queue(t_queue *queue) {
 }
 
 // Create a new node with provided IP, port, and scan type
-t_queue_node* create_queue_node(int ip, int port) {
+t_queue_node* create_queue_node(int ip, int port, port_result_t *results) {
     t_queue_node *node = malloc(sizeof(t_queue_node));
     if (!node) {
         perror("malloc failed");
@@ -135,13 +134,14 @@ t_queue_node* create_queue_node(int ip, int port) {
     }
     node->ip = ip;
     node->port = port;
+    node->results = results;
     node->next = NULL;
     return node;
 }
 
 // Enqueue: Insert a new node at the tail of the queue
-void enqueue(int ip, int port) {
-    t_queue_node *node = create_queue_node(ip, port);
+void enqueue(int ip, int port, port_result_t *results) {
+    t_queue_node *node = create_queue_node(ip, port, results);
     t_queue *queue = &g_data.opts.queue;
     if (queue->tail) {
         queue->tail->next = node;

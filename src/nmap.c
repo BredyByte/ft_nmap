@@ -270,8 +270,8 @@ void mark_unanswered_udp_scans(uint32_t port, port_result_t results[]) {
 /* --- Refactored sendAllPackets Function --- */
 void sendAllPackets(uint32_t ip, uint32_t port, uint32_t local_ip, port_result_t results[]) {
     int tcp_scan_types = g_data.opts.scan_types;
-    tcp_scan_types &= ~SCAN_UDP;
     int do_udp = (tcp_scan_types & SCAN_UDP) ? 1 : 0;
+    tcp_scan_types &= ~SCAN_UDP;
     int raw_sock = -1, udp_sock = -1;
 
     if (tcp_scan_types) {
@@ -338,10 +338,10 @@ void sendAllPackets(uint32_t ip, uint32_t port, uint32_t local_ip, port_result_t
     free(lookup);
 }
 
-void print_scan_results(port_result_t results[], uint8_t *ports, int scan_types) {
+void print_scan_results(port_result_t results[], t_port_info *ports, int scan_types) {
     printf("Scan results:\n");
     for (int i = 0; i < PORTS_LEN; i++) {
-        if (ports[i] != 1)
+        if (ports[i].is_active != 1)
             continue;
         printf("Port %d:\n", i);
         if (scan_types & SCAN_SYN)
@@ -364,7 +364,7 @@ void nmap_performance(void *ip) {
 
     t_queue_node *node = dequeue();
     while (node) {
-        sendAllPackets(node->ip, node->port, local_ip, g_data.opts.results);
+        sendAllPackets(node->ip, node->port, local_ip, node->results);
         free(node);
         node = dequeue();
     }

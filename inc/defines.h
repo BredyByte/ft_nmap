@@ -54,8 +54,8 @@ typedef enum {
 } scan_result_t;
 
 typedef struct {
-    int port;
-    scan_result_t results[NUM_SCAN_TYPES];
+    int             port;
+    scan_result_t   results[NUM_SCAN_TYPES];
 } port_result_t;
 
 /* --- TCP Socket Information --- */
@@ -77,8 +77,9 @@ typedef enum	e_scan_type
 }   t_scan_type;
 
 typedef struct s_queue_node {
-    int ip;
-    int port;
+    int                 ip;
+    int                 port;
+    port_result_t       *results;
     struct s_queue_node *next;
 } t_queue_node;
 
@@ -92,6 +93,7 @@ typedef struct	s_destlst
 {
 	char				*hostname;
 	struct sockaddr_in	dest_ip;
+    port_result_t       results[PORTS_LEN];
 	struct s_destlst	*next;
 }	t_destlst;
 
@@ -103,21 +105,20 @@ typedef struct s_port_info
 
 typedef struct	s_opts
 {
-	bool		port_flag;
-	bool		file_flag;
-	bool		ip_flag;
-	t_port_info ports[PORTS_LEN];
-	t_destlst	*host_destlsthdr;
-	uint8_t		thrnum;
-	uint8_t     scan_types;
-    port_result_t results[PORTS_LEN];
-    t_queue queue;
+	bool		    port_flag;
+	bool		    file_flag;
+	bool		    ip_flag;
+	t_port_info     ports[PORTS_LEN];
+	t_destlst	    *host_destlsthdr;
+	uint8_t		    thrnum;
+	uint8_t         scan_types;
+    t_queue         queue;
     //mutex
     pthread_mutex_t mutex;
 }	t_opts;
 
 	/*
-	to applie scan type / how bit mask works
+	to apply scan type / how bit mask works
 		opts.scan_types |= SCAN_SYN;	// activate SYN-scan
 		opts.scan_types |= SCAN_NULL;	// activate NULL-scan
 		opts.scan_types &= ~SCAN_NULL;	// desactivate NULL-scan
