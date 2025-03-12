@@ -38,9 +38,9 @@
 # include <time.h>
 # include <limits.h>
 
-# define PROTO_TCP IPPROTO_TCP
-# define PROTO_UDP IPPROTO_UDP
-# define PORTS_LEN 1025
+# define PROTO_TCP      IPPROTO_TCP
+# define PROTO_UDP      IPPROTO_UDP
+# define PORTS_LEN      1025
 # define NUM_SCAN_TYPES 6  // Order: SYN, NULL, ACK, FIN, XMAS, UDP
 
 /* --- Updated Result Enumeration --- */
@@ -93,7 +93,7 @@ typedef struct	s_destlst
 {
 	char				*hostname;
 	struct sockaddr_in	dest_ip;
-    port_result_t       results[2000];
+    port_result_t       results[PORTS_LEN];
 	struct s_destlst	*next;
 }	t_destlst;
 

@@ -371,31 +371,51 @@ void sendAllPackets(uint32_t ip, uint32_t port, uint32_t local_ip, port_result_t
     free(lookup);
 }
 
-void print_scan_results(void)
-{
-    // printf("Scan results:\n");
-    // t_destlst	    *dest = g_data.opts.host_destlsthdr;
-    // while (dest){
-    //     for (int i = 0; i < PORTS_LEN; i++) {
-    //         if (g_data.opts.ports[i].is_active != 1)
-    //             continue;
-    //         printf("Port %d:\n", i);
-    //         if (g_data.opts.scan_types & SCAN_SYN)
-    //             printf("  SYN:   %s\n", result_to_string(dest->results[i].results[0]));
-    //         if (g_data.opts.scan_types & SCAN_NULL)
-    //             printf("  NULL:  %s\n", result_to_string(dest->results[i].results[1]));
-    //         if (g_data.opts.scan_types & SCAN_ACK)
-    //             printf("  ACK:   %s\n", result_to_string(dest->results[i].results[2]));
-    //         if (g_data.opts.scan_types & SCAN_FIN)
-    //             printf("  FIN:   %s\n", result_to_string(dest->results[i].results[3]));
-    //         if (g_data.opts.scan_types & SCAN_XMAS)
-    //             printf("  XMAS:  %s\n", result_to_string(dest->results[i].results[4]));
-    //         if (g_data.opts.scan_types & SCAN_UDP)
-    //             printf("  UDP:   %s\n", result_to_string(dest->results[i].results[5]));
-    //     }
-    //     dest = dest->next;
-    // }
+void print_scan_results() {
+    for (t_destlst *ptr = g_data.opts.host_destlsthdr; ptr; ptr = ptr->next) {
+        printf("IP address: %s\n", inet_ntoa(ptr->dest_ip.sin_addr));
+        printf("Port\tService Name\t\tResults\n");
+        printf("--------------------------------------------------------------\n");
 
+        for (int i = 0; i < PORTS_LEN; ++i) {
+            if (!g_data.opts.ports[i].is_active)
+                continue;
+
+            const char *service = g_data.opts.ports[i].service_name ? g_data.opts.ports[i].service_name : "Unknown";
+            char result_buf[64]; // Buffer for formatted result strings
+            bool has_result = false;
+
+            if (g_data.opts.scan_types & SCAN_SYN) {
+                snprintf(result_buf, sizeof(result_buf), "SYN(%s)", result_to_string(ptr->results[i].results[0]));
+                printf("%-5d\t%-16s\t%-20s\n", i, service, result_buf);
+                has_result = true;
+            }
+
+            if (g_data.opts.scan_types & SCAN_NULL) {
+                snprintf(result_buf, sizeof(result_buf), "NULL(%s)", result_to_string(ptr->results[i].results[1]));
+                printf("%s%-20s\n", has_result ? "\t\t\t" : "", result_buf);
+                has_result = true;
+            }
+            if (g_data.opts.scan_types & SCAN_ACK) {
+                snprintf(result_buf, sizeof(result_buf), "ACK(%s)", result_to_string(ptr->results[i].results[2]));
+                printf("\t\t\t%-20s\n", result_buf);
+            }
+            if (g_data.opts.scan_types & SCAN_FIN) {
+                snprintf(result_buf, sizeof(result_buf), "FIN(%s)", result_to_string(ptr->results[i].results[3]));
+                printf("\t\t\t%-20s\n", result_buf);
+            }
+            if (g_data.opts.scan_types & SCAN_XMAS) {
+                snprintf(result_buf, sizeof(result_buf), "XMAS(%s)", result_to_string(ptr->results[i].results[4]));
+                printf("\t\t\t%-20s\n", result_buf);
+            }
+            if (g_data.opts.scan_types & SCAN_UDP) {
+                snprintf(result_buf, sizeof(result_buf), "UDP(%s)", result_to_string(ptr->results[i].results[5]));
+                printf("\t\t\t%-20s\n", result_buf);
+            }
+
+            printf("\n");
+        }
+    }
 }
 
 void nmap_performance(void *ip) {
