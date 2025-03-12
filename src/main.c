@@ -5,8 +5,6 @@
 
 t_nmap g_data;
 
-
-
 int	main(int argc, char **argv)
 {
 	if (getuid() !=  0)
@@ -17,7 +15,8 @@ int	main(int argc, char **argv)
 
     t_destlst *dest = g_data.opts.host_destlsthdr;
     while (dest) {
-        for (int port = 0; port < PORTS_LEN; port++)
+        memset(dest->results, 0, sizeof(dest->results));
+        for (int port = 1; port < PORTS_LEN; port++)
         {
             if (g_data.opts.ports[port].is_active)
             {
@@ -30,24 +29,35 @@ int	main(int argc, char **argv)
     }
     int local_ip = get_local_ip();
 
-    pthread_t thread; // Declare the thread variable outside the loop
+    printf("Scanning..\n");
+    printf("...........................\n");
+
+    struct timeval start, end;
+    gettimeofday(&start, NULL);
+
+    pthread_t *threads = malloc(sizeof(pthread_t) * g_data.opts.thrnum);
+    if (!threads)
+        exit_failure("Memory allocation failed for threads.\n");
     // Start the threads
     for (int i = 0; i < g_data.opts.thrnum; i++) {
-        pthread_create(&thread, NULL, nmap_performance, (void*)&local_ip);
+        pthread_create(&threads[i], NULL, nmap_performance, (void*)&local_ip);
     }
 
     nmap_performance((void*)&local_ip);
 
     // Wait for all threads to finish
-    for (int i = 0; i < g_data.opts.thrnum + 1; i++) {
-        pthread_join(thread, NULL);
+    for (int i = 0; i < g_data.opts.thrnum; i++) {
+        pthread_join(threads[i], NULL);
     }
+    free(threads);
 
-    dest = g_data.opts.host_destlsthdr;
-    while (dest) {
-    print_scan_results(dest->results, g_data.opts.ports, g_data.opts.scan_types);
-    dest = dest->next;
-    }
+    gettimeofday(&end, NULL);
+    double elapsed = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6;
+    printf("Scan took %.5f secs\n", elapsed);
+
+
+    print_scan_results();
+
 	memfree();
 	return 0;
 }

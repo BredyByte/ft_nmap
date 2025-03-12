@@ -36,11 +36,11 @@ void	free_list(t_destlst **head)
     t_destlst *current = *head;
     t_destlst *next;
 
+
     while (current)
     {
         next = current->next;
-        if (current->hostname)
-            free(current->hostname);
+        free(current->hostname);
         free(current);
         current = next;
     }

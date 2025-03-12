@@ -169,56 +169,80 @@ void send_udp_packet(int udp_sock, struct sockaddr_in *dest, int port) {
     dest->sin_port = htons(port);
     const char *data = "UDP";
     if (sendto(udp_sock, data, strlen(data), 0, (struct sockaddr*)dest, sizeof(*dest)) < 0)
+    {
         perror("sendto UDP");
+        printf("port: %d\n", dest->sin_port);
+    }
 }
 
 
 /* --- Process TCP Responses --- */
-void process_tcp_responses(int raw_sock, struct sockaddr_in *dest, mapping_entry *lookup,
+
+void    process_tcp_responses(int raw_sock, struct sockaddr_in *dest, mapping_entry *lookup,
                            port_result_t results[], int tcp_scan_types) {
     char recv_buf[4096];
-    for (int i = 0; i < (1 << 16); i++) {
-        if (lookup[i].used)
-            usleep(500);
-    }
-    time_t start_time = time(NULL);
-    while ((time(NULL) - start_time) < 3 && tcp_scan_types) {
-        ssize_t data_size = recv(raw_sock, recv_buf, sizeof(recv_buf), 0);
-        if (data_size < 0) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) { usleep(10000); continue; }
-            else { perror("recv"); break; }
+    struct timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 300000; // 300 milliseconds
+
+    fd_set readfds;
+    FD_ZERO(&readfds);
+    FD_SET(raw_sock, &readfds);
+
+    while (tcp_scan_types) {
+        fd_set tempfds = readfds;
+        int sel = select(raw_sock + 1, &tempfds, NULL, NULL, &timeout);
+        if (sel < 0) {
+            perror("select");
+            break;
+        } else if (sel == 0) {
+            // Timeout occurred
+            break;
         }
+
+        ssize_t data_size = recv(raw_sock, recv_buf, sizeof(recv_buf), 0);
+        if (data_size <= 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) continue;
+            perror("recv");
+            break;
+        }
+
         struct iphdr *rec_iph = (struct iphdr*)recv_buf;
         if (rec_iph->protocol != IPPROTO_TCP)
             continue;
+
         int iphdrlen = rec_iph->ihl * 4;
         if (data_size < iphdrlen + (int)sizeof(struct tcphdr))
             continue;
+
         struct tcphdr *rec_tcph = (struct tcphdr*)(recv_buf + iphdrlen);
         if (rec_iph->saddr != dest->sin_addr.s_addr)
             continue;
+
         int resp_src_port = ntohs(rec_tcph->dest);
         mapping_entry entry = lookup[resp_src_port];
         if (!entry.used)
             continue;
+
         int scanned_port = entry.dest_port;
         int scan_idx = entry.scan_index;
-        /* Update based on received TCP flags */
-        if (scan_idx == 0) { /* SYN scan */
+
+        // Update results based on received TCP flags
+        if (scan_idx == 0) { // SYN scan
             if (rec_tcph->syn && rec_tcph->ack)
                 results[scanned_port].results[0] = SCAN_RESULT_OPEN;
             else if (rec_tcph->rst)
                 results[scanned_port].results[0] = SCAN_RESULT_CLOSED;
-        } else if (scan_idx == 1) { /* NULL scan */
+        } else if (scan_idx == 1) { // NULL scan
             if (rec_tcph->rst)
                 results[scanned_port].results[1] = SCAN_RESULT_CLOSED;
-        } else if (scan_idx == 2) { /* ACK scan */
+        } else if (scan_idx == 2) { // ACK scan
             if (rec_tcph->rst)
                 results[scanned_port].results[2] = SCAN_RESULT_UNFILTERED;
-        } else if (scan_idx == 3) { /* FIN scan */
+        } else if (scan_idx == 3) { // FIN scan
             if (rec_tcph->rst)
                 results[scanned_port].results[3] = SCAN_RESULT_CLOSED;
-        } else if (scan_idx == 4) { /* XMAS scan */
+        } else if (scan_idx == 4) { // XMAS scan
             if (rec_tcph->rst)
                 results[scanned_port].results[4] = SCAN_RESULT_CLOSED;
         }
@@ -241,30 +265,57 @@ void mark_unanswered_tcp_scans(mapping_entry *lookup, port_result_t results[]) {
         }
     }
 }
-/* Process UDP responses. */
-void process_udp_responses(int udp_sock, uint8_t *ports, port_result_t results[]) {
-    fd_set readfds;
-    FD_ZERO(&readfds);
-    FD_SET(udp_sock, &readfds);
-    struct timeval timeout_udp = {3, 0};
-    int ready = select(udp_sock + 1, &readfds, NULL, NULL, &timeout_udp);
-    if (ready > 0 && FD_ISSET(udp_sock, &readfds)) {
-        char buf[1024];
-        struct sockaddr_in from;
-        socklen_t fromlen = sizeof(from);
-        ssize_t n = recvfrom(udp_sock, buf, sizeof(buf), 0, (struct sockaddr*)&from, &fromlen);
-        if (n >= 0) {
-            int resp_port = ntohs(from.sin_port);
-            if (resp_port < PORTS_LEN && ports[resp_port])
-                results[resp_port].results[5] = SCAN_RESULT_CLOSED;
-        }
-    }
-}
 
 /* --- Mark Unanswered UDP Scans --- */
 void mark_unanswered_udp_scans(uint32_t port, port_result_t results[]) {
     if (results[port].results[5] == SCAN_RESULT_NO_RESPONSE)
         results[port].results[5] = SCAN_RESULT_OPEN_FILTERED;
+}
+
+#include <fcntl.h>
+
+void process_udp_responses(int udp_sock, port_result_t results[], int port) {
+    // Set socket to non-blocking
+    int flags = fcntl(udp_sock, F_GETFL, 0);
+    fcntl(udp_sock, F_SETFL, flags | O_NONBLOCK);
+
+    fd_set readfds;
+    struct timeval timeout_udp = {0, 300000}; // 300ms timeout
+
+    char buf[1024];
+    struct sockaddr_in from;
+    socklen_t fromlen = sizeof(from);
+
+    while (1) {
+        FD_ZERO(&readfds);
+        FD_SET(udp_sock, &readfds);
+
+        int ready = select(udp_sock + 1, &readfds, NULL, NULL, &timeout_udp);
+        if (ready < 0) {
+            perror("select");
+            break;
+        } else if (ready == 0) {
+            // Timeout reached with no response
+            break;
+        }
+
+        ssize_t n = recvfrom(udp_sock, buf, sizeof(buf), 0, (struct sockaddr*)&from, &fromlen);
+        if (n >= 0) {
+            int resp_port = ntohs(from.sin_port);
+            if (resp_port < PORTS_LEN && resp_port) {
+                results[resp_port].results[5] = SCAN_RESULT_CLOSED;
+                break; // Received response, exit early
+            }
+        } else if (errno != EAGAIN && errno != EWOULDBLOCK) {
+            perror("recvfrom");
+            break;
+        }
+    }
+
+    // Mark unanswered UDP scans as open|filtered
+    mark_unanswered_udp_scans(port, results);
+
+    close(udp_sock);
 }
 
 /* --- Refactored sendAllPackets Function --- */
@@ -313,56 +364,45 @@ void sendAllPackets(uint32_t ip, uint32_t port, uint32_t local_ip, port_result_t
     mark_unanswered_tcp_scans(lookup, results);
 
     /* Process UDP responses */
-    if (do_udp) {
-        fd_set readfds;
-        FD_ZERO(&readfds);
-        FD_SET(udp_sock, &readfds);
-        struct timeval timeout_udp = {3, 0};
-        int ready = select(udp_sock + 1, &readfds, NULL, NULL, &timeout_udp);
-        if (ready > 0 && FD_ISSET(udp_sock, &readfds)) {
-            char buf[1024];
-            struct sockaddr_in from;
-            socklen_t fromlen = sizeof(from);
-            ssize_t n = recvfrom(udp_sock, buf, sizeof(buf), 0, (struct sockaddr*)&from, &fromlen);
-            if (n >= 0) {
-                int resp_port = ntohs(from.sin_port);
-                if (resp_port < PORTS_LEN && resp_port)
-                    results[resp_port].results[5] = SCAN_RESULT_CLOSED;
-            }
-        }
-        mark_unanswered_udp_scans(port, results);
-        close(udp_sock);
-    }
+    if (do_udp)
+        process_udp_responses(udp_sock, results, port);
     if (tcp_scan_types)
         close(raw_sock);
     free(lookup);
 }
 
-void print_scan_results(port_result_t results[], t_port_info *ports, int scan_types) {
-    printf("Scan results:\n");
-    for (int i = 0; i < PORTS_LEN; i++) {
-        if (ports[i].is_active != 1)
-            continue;
-        printf("Port %d:\n", i);
-        if (scan_types & SCAN_SYN)
-            printf("  SYN:   %s\n", result_to_string(results[i].results[0]));
-        if (scan_types & SCAN_NULL)
-            printf("  NULL:  %s\n", result_to_string(results[i].results[1]));
-        if (scan_types & SCAN_ACK)
-            printf("  ACK:   %s\n", result_to_string(results[i].results[2]));
-        if (scan_types & SCAN_FIN)
-            printf("  FIN:   %s\n", result_to_string(results[i].results[3]));
-        if (scan_types & SCAN_XMAS)
-            printf("  XMAS:  %s\n", result_to_string(results[i].results[4]));
-        if (scan_types & SCAN_UDP)
-            printf("  UDP:   %s\n", result_to_string(results[i].results[5]));
-    }
+void print_scan_results(void)
+{
+    // printf("Scan results:\n");
+    // t_destlst	    *dest = g_data.opts.host_destlsthdr;
+    // while (dest){
+    //     for (int i = 0; i < PORTS_LEN; i++) {
+    //         if (g_data.opts.ports[i].is_active != 1)
+    //             continue;
+    //         printf("Port %d:\n", i);
+    //         if (g_data.opts.scan_types & SCAN_SYN)
+    //             printf("  SYN:   %s\n", result_to_string(dest->results[i].results[0]));
+    //         if (g_data.opts.scan_types & SCAN_NULL)
+    //             printf("  NULL:  %s\n", result_to_string(dest->results[i].results[1]));
+    //         if (g_data.opts.scan_types & SCAN_ACK)
+    //             printf("  ACK:   %s\n", result_to_string(dest->results[i].results[2]));
+    //         if (g_data.opts.scan_types & SCAN_FIN)
+    //             printf("  FIN:   %s\n", result_to_string(dest->results[i].results[3]));
+    //         if (g_data.opts.scan_types & SCAN_XMAS)
+    //             printf("  XMAS:  %s\n", result_to_string(dest->results[i].results[4]));
+    //         if (g_data.opts.scan_types & SCAN_UDP)
+    //             printf("  UDP:   %s\n", result_to_string(dest->results[i].results[5]));
+    //     }
+    //     dest = dest->next;
+    // }
+
 }
 
 void nmap_performance(void *ip) {
     uint32_t local_ip = *(uint32_t*)ip;
 
     t_queue_node *node = dequeue();
+
     while (node) {
         sendAllPackets(node->ip, node->port, local_ip, node->results);
         free(node);

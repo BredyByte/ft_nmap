@@ -263,45 +263,30 @@ void	apply_scans(const char *input)
 
 void    print_options(void)
 {
-    printf("Selected options:\n\n");
+    int len = 1024;
 
-    // ports
-    printf("Ports:\n");
+    printf("Scan Configurations\n\n");
+    printf("Target IPs:\n");
+    for (t_destlst *ptr = g_data.opts.host_destlsthdr; ptr; ptr = ptr->next)
+    {
+        printf("  IPv4: %s, Hostname: %s\n",
+            inet_ntoa(ptr->dest_ip.sin_addr),
+            ptr->hostname ? ptr->hostname : "NULL");
+    }
+
     if (g_data.opts.port_flag)
     {
-        for (int i = 0; i < (PORTS_LEN); ++i)
+        len = 0;
+        for (int i = 0; i < PORTS_LEN; ++i)
         {
             if (g_data.opts.ports[i].is_active)
-                printf("%s %i\n", g_data.opts.ports[i].service_name, i);
+                len++;
         }
     }
-    else
-        printf("1-1024\n");
-
-    putchar('\n');
-
-    // IPs list
-    if (g_data.opts.host_destlsthdr != NULL)
-    {
-        printf("IPs:\n");
-        t_destlst *current = g_data.opts.host_destlsthdr;
-        while (current)
-        {
-            printf("  IPv4: %s, Hostname: %s\n",
-                inet_ntoa(current->dest_ip.sin_addr),
-                current->hostname ? current->hostname : "NULL");
-            current = current->next;
-        }
-    }
+    printf("No. of Ports to scan:\n  %i\n", len);
 
     // speedup
-    if (g_data.opts.thrnum > 0)
-    {
-        printf("Speedup:\n");
-        printf("  threats: %d\n", g_data.opts.thrnum);
-    }
-
-    putchar('\n');
+    printf("threads:\n  %d\n", g_data.opts.thrnum);
 
     // scan
     printf("Scan types:\n");
@@ -312,8 +297,7 @@ void    print_options(void)
         g_data.opts.scan_types & SCAN_FIN  ? 1 : 0,
         g_data.opts.scan_types & SCAN_XMAS ? 1 : 0,
         g_data.opts.scan_types & SCAN_UDP  ? 1 : 0);
-
-    putchar('\n');
+    printf("\n\n");
 }
 
 // -1 error else 0

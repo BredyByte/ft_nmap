@@ -93,7 +93,7 @@ typedef struct	s_destlst
 {
 	char				*hostname;
 	struct sockaddr_in	dest_ip;
-    port_result_t       results[PORTS_LEN];
+    port_result_t       results[2000];
 	struct s_destlst	*next;
 }	t_destlst;
 
