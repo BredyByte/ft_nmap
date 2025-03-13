@@ -35,6 +35,7 @@ void                print_options(void);
 int                 parse_port_range(const char *range_str);
 void                parse_ports(const char *input);
 void                read_ips_from_file(const char *filename);
+void                check_duplicates();
 
 void	args_parser(int argc, char **argv)
 {
@@ -418,5 +419,26 @@ void    read_ips_from_file(const char *filename)
     if (!g_data.opts.host_destlsthdr)
         exit_failure("ft_nmap: --file is empty\n");
 
+    check_duplicates();
+
     g_data.opts.file_flag = true;
+}
+
+void    check_duplicates()
+{
+    for (t_destlst *current = g_data.opts.host_destlsthdr;
+        current != NULL; current = current->next)
+    {
+        for (t_destlst *compare = current->next;
+            compare != NULL; compare = compare->next)
+            {
+            if (current->dest_ip.sin_addr.s_addr == compare->dest_ip.sin_addr.s_addr ||
+                (current->hostname && compare->hostname && strcmp(current->hostname, compare->hostname) == 0))
+                {
+                fprintf(stderr, "ft_nmap: --file duplicate IP or hostname detected: %s\n",
+                        current->hostname ? current->hostname : inet_ntoa(current->dest_ip.sin_addr));
+                exit_failure("");
+            }
+        }
+    }
 }
