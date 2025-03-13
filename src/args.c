@@ -86,16 +86,15 @@ void	args_options(int argc, char **argv)
                 if (g_data.opts.file_flag == true)
                     exit_failure("ft_nmap: --ip can't be set with --file flag\n");
 
-                g_data.opts.ip_flag = true;
                 if (add_ip_to_list(optarg) == -1)
                     exit_failure("");
+                g_data.opts.ip_flag = true;
 			}
 			else if (strcmp("file", option_name) == 0)
 			{
                 if (g_data.opts.ip_flag == true)
                     exit_failure("ft_nmap: --ip can't be set with --file flag\n");
 
-                g_data.opts.file_flag = true;
 				read_ips_from_file(optarg);
 			}
 			else if (strcmp("speedup", option_name) == 0)
@@ -415,4 +414,9 @@ void    read_ips_from_file(const char *filename)
     }
 
     fclose(file);
+
+    if (!g_data.opts.host_destlsthdr)
+        exit_failure("ft_nmap: --file is empty\n");
+
+    g_data.opts.file_flag = true;
 }
