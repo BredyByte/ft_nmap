@@ -1,36 +1,17 @@
 # ifndef DEFINES_H
 # define DEFINES_H
 
-# include <arpa/inet.h>
-# include <sys/socket.h>
-# include <stdio.h>
-# include <string.h>
-# include <stdlib.h>
-# include <unistd.h>
-# include <errno.h>
-# include <fcntl.h>
 # include <sys/select.h>
 # include <sys/time.h>
-# include <netinet/ip.h>
-# include <netinet/tcp.h>
 # include <stdbool.h>
-# include <stdlib.h>
-# include <stdio.h>
-# include <string.h>
-# include <errno.h>
 # include <fcntl.h>
-# include <arpa/inet.h>
-# include <unistd.h>
-# include <netinet/ip.h>
-# include <netinet/tcp.h>
 # include <pthread.h>
-#include <netinet/ip_icmp.h>
+# include <netinet/ip_icmp.h>
 # include <stdio.h>
 # include <string.h>
 # include <stdlib.h>
 # include <unistd.h>
 # include <errno.h>
-# include <time.h>
 # include <arpa/inet.h>
 # include <netinet/ip.h>
 # include <netinet/tcp.h>
