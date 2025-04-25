@@ -180,7 +180,8 @@ const char  *get_service_name(uint16_t port)
         case 13: return "daytime";
         case 15: return "netstat";
         case 17: return "qotd";
-        case 19: return "chargen";
+        case 18: return "msp";
+        case 19: return "loaden";
         case 20: return "ftp-data";
         case 21: return "ftp/fsp";
         case 22: return "ssh";

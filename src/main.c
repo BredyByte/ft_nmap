@@ -93,8 +93,8 @@ int	main(int argc, char **argv)
     printf("Scan took %.5f secs\n", elapsed);
 
 
-    print_scan_results(); // THIS IS FUCKED !!!!!!!!!!!!! valgrind error :(
-
+    print_scan_results();
+    
 	memfree();
 	return 0;
 }

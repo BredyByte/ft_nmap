@@ -395,7 +395,7 @@ void process_icmp_responses(int icmp_sock, port_result_t **results, int *ports) 
     // Nmap waits several seconds for ICMP errors due to rate-limiting (default is 3-10s)
     struct timeval timeout;
     timeout.tv_sec = 0;
-    timeout.tv_usec = 300000;
+    timeout.tv_usec = 3000;
 
     fd_set readfds;
     int total_ports = 0;
@@ -519,8 +519,7 @@ void sendAllPackets(uint32_t ip, int *ports, port_result_t **results, uint32_t l
     // Process ICMP errors (UDP closed) and UDP replies (UDP open)
     if (do_udp) {
         process_udp_responses(udp_sock, results, ports); // Does not work for OPEN, as I need to send a DNS query and will only work for that port (What Nmap does)
-        if (icmp_sock >= 0)
-            process_icmp_responses(icmp_sock, results, ports);
+        process_icmp_responses(icmp_sock, results, ports);
     }
 
     if (tcp_scan_types) {
@@ -541,43 +540,54 @@ void print_scan_results() {
         printf("Port\tService Name\t\tResults\n");
         printf("--------------------------------------------------------------\n");
 
-        for (int i = 0; i < PORTS_LEN; ++i) {
+        for (int i = 1; i < PORTS_LEN; ++i) {
             if (!g_data.opts.ports[i].is_active)
                 continue;
 
-            const char *service = g_data.opts.ports[i].service_name ? g_data.opts.ports[i].service_name : "Unknown";
-            char result_buf[64]; // Buffer for formatted result strings
-            bool has_result = false;
+
+            const char *service = g_data.opts.ports[i].service_name
+                                      ? g_data.opts.ports[i].service_name
+                                      : "Unknown";
+
+            printf("%-5d\t%-16s\t", i, service);  // Print port and service once
+
+            char result_buf[64];
+            bool printed_any = false;
 
             if (g_data.opts.scan_types & SCAN_SYN) {
-                snprintf(result_buf, sizeof(result_buf), "SYN(%s)", result_to_string(ptr->results[i].results[0]));
-                printf("%-5d\t%-16s\t%-20s\n", i, service, result_buf);
-                has_result = true;
+                snprintf(result_buf, sizeof(result_buf), "SYN(%s)",
+                         result_to_string(ptr->results[i].results[0]));
+                printf("%s  ", result_buf);
+                printed_any = true;
             }
-
             if (g_data.opts.scan_types & SCAN_NULL) {
-                snprintf(result_buf, sizeof(result_buf), "NULL(%s)", result_to_string(ptr->results[i].results[1]));
-                printf("%s%-20s\n", has_result ? "\t\t\t" : "", result_buf);
-                has_result = true;
+                snprintf(result_buf, sizeof(result_buf), "NULL(%s)",
+                         result_to_string(ptr->results[i].results[1]));
+                printf(printed_any ? "%s  " : "%s  ", result_buf);
+                printed_any = true;
             }
             if (g_data.opts.scan_types & SCAN_ACK) {
-                snprintf(result_buf, sizeof(result_buf), "ACK(%s)", result_to_string(ptr->results[i].results[2]));
-                printf("\t\t\t%-20s\n", result_buf);
+                snprintf(result_buf, sizeof(result_buf), "ACK(%s)",
+                         result_to_string(ptr->results[i].results[2]));
+                printf("%s  ", result_buf);
             }
             if (g_data.opts.scan_types & SCAN_FIN) {
-                snprintf(result_buf, sizeof(result_buf), "FIN(%s)", result_to_string(ptr->results[i].results[3]));
-                printf("\t\t\t%-20s\n", result_buf);
+                snprintf(result_buf, sizeof(result_buf), "FIN(%s)",
+                         result_to_string(ptr->results[i].results[3]));
+                printf("%s  ", result_buf);
             }
             if (g_data.opts.scan_types & SCAN_XMAS) {
-                snprintf(result_buf, sizeof(result_buf), "XMAS(%s)", result_to_string(ptr->results[i].results[4]));
-                printf("\t\t\t%-20s\n", result_buf);
+                snprintf(result_buf, sizeof(result_buf), "XMAS(%s)",
+                         result_to_string(ptr->results[i].results[4]));
+                printf("%s  ", result_buf);
             }
             if (g_data.opts.scan_types & SCAN_UDP) {
-                snprintf(result_buf, sizeof(result_buf), "UDP(%s)", result_to_string(ptr->results[i].results[5]));
-                printf("\t\t\t%-20s\n", result_buf);
+                snprintf(result_buf, sizeof(result_buf), "UDP(%s)",
+                         result_to_string(ptr->results[i].results[5]));
+                printf("%s  ", result_buf);
             }
 
-            printf("\n");
+            printf("\n\n");
         }
     }
 }

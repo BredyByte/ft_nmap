@@ -1,9 +1,3 @@
 example.com
-example.com
-
-
-
-
-127.0.0.1  192.19.31.1
-google.com  8.8.8.8
-
+9.9.9.9
+8.8.8.8
