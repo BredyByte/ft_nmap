@@ -112,9 +112,9 @@ void	print_help(void)
 	printf("Help Screen\n");
 	printf("ft_nmap [OPTIONS]\n");
 	printf("  --help\tPrint this help message\n");
-	printf("  --port\tPorts to scan (eg: 1-10 or 1,2,3 or 1,5-15)\n");
-	printf("  --ip\t\tIPv4 addresses or hostname to scan\n");
-	printf("  --file\tFile name containing IPv4 addresses and hostnames to scan, separated by spaces or new lines\n");
+	printf("  --port\tports to scan (eg: 1-10 or 1,2,3 or 1,5-15)\n");
+	printf("  --ip\t\tip addresses or hostname to scan in dot format\n");
+	printf("  --file\tFile name containing IP addresses/hostnames to scan, separated by comma\n");
 	printf("  --speedup\t[1-250] number of parallel threads to use\n");
 	printf("  --scan\tSYN/NULL/FIN/XMAS/ACK/UDP (eg, SYN or \"NULL FIN XMAS UDP\")\n");
 }
@@ -126,22 +126,22 @@ void init_queue(t_queue *queue) {
 }
 
 // Create a new node with provided IP, port, and scan type
-t_queue_node* create_queue_node(int ip, int port, port_result_t *results) {
+t_queue_node* create_queue_node(int ip, int *ports, port_result_t **results) {
     t_queue_node *node = malloc(sizeof(t_queue_node));
     if (!node) {
         perror("malloc failed");
         exit(EXIT_FAILURE);
     }
     node->ip = ip;
-    node->port = port;
+    node->ports = ports;
     node->results = results;
     node->next = NULL;
     return node;
 }
 
 // Enqueue: Insert a new node at the tail of the queue
-void enqueue(int ip, int port, port_result_t *results) {
-    t_queue_node *node = create_queue_node(ip, port, results);
+void enqueue(int ip, int *ports, port_result_t **results) {
+    t_queue_node *node = create_queue_node(ip, ports, results);
     t_queue *queue = &g_data.opts.queue;
     if (queue->tail) {
         queue->tail->next = node;

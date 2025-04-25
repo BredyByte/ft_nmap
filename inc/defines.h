@@ -24,7 +24,7 @@
 # include <netinet/ip.h>
 # include <netinet/tcp.h>
 # include <pthread.h>
-
+#include <netinet/ip_icmp.h>
 # include <stdio.h>
 # include <string.h>
 # include <stdlib.h>
@@ -78,8 +78,8 @@ typedef enum	e_scan_type
 
 typedef struct s_queue_node {
     int                 ip;
-    int                 port;
-    port_result_t       *results;
+    int                 *ports;
+    port_result_t       **results;
     struct s_queue_node *next;
 } t_queue_node;
 

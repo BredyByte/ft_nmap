@@ -15,16 +15,53 @@ int	main(int argc, char **argv)
 
     t_destlst *dest = g_data.opts.host_destlsthdr;
     while (dest) {
-        memset(dest->results, 0, sizeof(dest->results));
-        for (int port = 1; port < PORTS_LEN; port++)
-        {
+        // Count active ports for this dest
+        int active_count = 0;
+        for (uint16_t port = 1; port < PORTS_LEN; port++) {
             if (g_data.opts.ports[port].is_active)
-            {
+                active_count++;
+        }
+
+        if (active_count == 0) {
+            dest = dest->next;
+            continue;
+        }
+
+        // Allocate arrays for ports and results (+1 for sentinel)
+        int *ports = calloc(active_count + 1, sizeof(int));
+        port_result_t **results = calloc(active_count + 1, sizeof(port_result_t*));
+        if (!ports || !results) {
+            perror("calloc");
+            exit(1);
+        }
+
+        // Fill arrays
+        int idx = 0;
+        for (int port = 1; port < PORTS_LEN; port++) {
+            if (g_data.opts.ports[port].is_active) {
+                ports[idx] = port;
+
+                // Allocate and initialize results struct for this port
+                results[idx] = calloc(1, sizeof(port_result_t));
+                if (!results[idx]) {
+                    perror("calloc");
+                    free(ports);
+                    free(results);
+                    exit(1);
+                }
+                results[idx]->port = port;
                 for (int j = 0; j < NUM_SCAN_TYPES; j++)
-                    dest->results->results[j] = SCAN_RESULT_NO_RESPONSE;
-                enqueue(dest->dest_ip.sin_addr.s_addr, port, dest->results);
+                    results[idx]->results[j] = SCAN_RESULT_NO_RESPONSE;
+
+                idx++;
             }
         }
+        ports[idx] = 0;       // sentinel to mark end of ports array
+        results[idx] = NULL;  // sentinel to mark end of results array
+
+        // Enqueue whole port range and results array
+        enqueue(dest->dest_ip.sin_addr.s_addr, ports, results);
+
         dest = dest->next;
     }
     int local_ip = get_local_ip();
@@ -56,7 +93,7 @@ int	main(int argc, char **argv)
     printf("Scan took %.5f secs\n", elapsed);
 
 
-    print_scan_results();
+    print_scan_results(); // THIS IS FUCKED !!!!!!!!!!!!! valgrind error :(
 
 	memfree();
 	return 0;
