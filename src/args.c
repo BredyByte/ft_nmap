@@ -286,7 +286,7 @@ void    print_options(void)
     printf("No. of Ports to scan:\n  %i\n", len);
 
     // speedup
-    printf("threads:\n  %d\n", g_data.opts.thrnum);
+    printf("Threads:\n  %d\n", g_data.opts.thrnum);
 
     // scan
     printf("Scan types:\n");
