@@ -378,38 +378,44 @@ void print_scan_results() {
         printf("--------------------------------------------------------------\n");
 
         for (int i = 0; i < PORTS_LEN; ++i) {
-            if (!g_data.opts.ports[i].is_active)
-                continue;
+            const char *service = g_data.opts.ports[i].service_name
+                                      ? g_data.opts.ports[i].service_name
+                                      : "Unknown";
+            printf("%-5d\t%-16s\t", i, service);  // Print port and service once
 
-            const char *service = g_data.opts.ports[i].service_name ? g_data.opts.ports[i].service_name : "Unknown";
-            char result_buf[64]; // Buffer for formatted result strings
-            bool has_result = false;
+            char result_buf[64];
+            bool printed_any = false;
 
             if (g_data.opts.scan_types & SCAN_SYN) {
-                snprintf(result_buf, sizeof(result_buf), "SYN(%s)", result_to_string(ptr->results[i].results[0]));
-                printf("%-5d\t%-16s\t%-20s\n", i, service, result_buf);
-                has_result = true;
+                snprintf(result_buf, sizeof(result_buf), "SYN(%s)",
+                         result_to_string(ptr->results[i].results[0]));
+                printf("%-20s\n", result_buf);
+                printed_any = true;
             }
-
             if (g_data.opts.scan_types & SCAN_NULL) {
-                snprintf(result_buf, sizeof(result_buf), "NULL(%s)", result_to_string(ptr->results[i].results[1]));
-                printf("%s%-20s\n", has_result ? "\t\t\t" : "", result_buf);
-                has_result = true;
+                snprintf(result_buf, sizeof(result_buf), "NULL(%s)",
+                         result_to_string(ptr->results[i].results[1]));
+                printf(printed_any ? "\t\t\t%-20s\n" : "%-20s\n", result_buf);
+                printed_any = true;
             }
             if (g_data.opts.scan_types & SCAN_ACK) {
-                snprintf(result_buf, sizeof(result_buf), "ACK(%s)", result_to_string(ptr->results[i].results[2]));
+                snprintf(result_buf, sizeof(result_buf), "ACK(%s)",
+                         result_to_string(ptr->results[i].results[2]));
                 printf("\t\t\t%-20s\n", result_buf);
             }
             if (g_data.opts.scan_types & SCAN_FIN) {
-                snprintf(result_buf, sizeof(result_buf), "FIN(%s)", result_to_string(ptr->results[i].results[3]));
+                snprintf(result_buf, sizeof(result_buf), "FIN(%s)",
+                         result_to_string(ptr->results[i].results[3]));
                 printf("\t\t\t%-20s\n", result_buf);
             }
             if (g_data.opts.scan_types & SCAN_XMAS) {
-                snprintf(result_buf, sizeof(result_buf), "XMAS(%s)", result_to_string(ptr->results[i].results[4]));
+                snprintf(result_buf, sizeof(result_buf), "XMAS(%s)",
+                         result_to_string(ptr->results[i].results[4]));
                 printf("\t\t\t%-20s\n", result_buf);
             }
             if (g_data.opts.scan_types & SCAN_UDP) {
-                snprintf(result_buf, sizeof(result_buf), "UDP(%s)", result_to_string(ptr->results[i].results[5]));
+                snprintf(result_buf, sizeof(result_buf), "UDP(%s)",
+                         result_to_string(ptr->results[i].results[5]));
                 printf("\t\t\t%-20s\n", result_buf);
             }
 
